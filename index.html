@@ -340,16 +340,26 @@
             loadingEl.textContent = 'Cargando sesiones...';
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getSessions`);
+
+                if (!response.ok) {
+                    throw new Error(`Error de red: ${response.status} ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                if (!result.success) throw new Error(result.message);
+                
+                if (!result.success) {
+                    // Si el script devolvió un error, lo mostramos
+                    console.error("Error devuelto por el script:", result.message, result.stack);
+                    throw new Error(result.message);
+                }
                 
                 allSessions = result.data;
                 renderSessionList();
 
             } catch (error) {
-                console.error("Error al cargar sesiones:", error);
+                console.error("Error detallado al cargar sesiones:", error);
                 loadingEl.textContent = 'Error al cargar sesiones.';
-                showModal('Error', 'No se pudieron cargar las sesiones. Revisa la URL del script y la configuración de la hoja.');
+                showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Por favor, revisa la consola del navegador (F12) para más información y comprueba la configuración de la implementación del script.`);
             }
         }
 
@@ -553,3 +563,6 @@
     </script>
 </body>
 </html>
+" in the Canvas.
+
+I have already pasted the URL you gave me in the previous step and I still get the same error. I have also checked the permissions and the name of the she
