@@ -91,13 +91,7 @@
             { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral...", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
             { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
             { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.3", text: "2.3 Contribuir a generar un compromiso activo con el bien común...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.4", text: "2.4 Tomar consciencia de la lucha por una efectiva igualdad de género...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.5", text: "2.5 Contribuir activamente al bienestar social...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.6", text: "2.6 Contribuir a la consecución de un mundo más justo...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "3.1", text: "3.1 Describir las relaciones históricas de interconexión...", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.2", text: "3.2 Valorar distintos planteamientos científicos...", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.3", text: "3.3 Promover estilos de vida éticamente comprometidos...", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+            { id: "2.3", text: "2.3 Promover estilos de vida éticamente comprometidos...", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
             { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones...", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
         ];
         const duaData = {
@@ -321,27 +315,34 @@
             form.addEventListener('change', (event) => { if (event.target.name === 'criteriosEvaluacion') { updateDerivedFields(); } });
         }
 
+        // --------- Capa de API (anti-CORS) ---------
         async function apiCall(action, data = {}) {
             const payload = { action, ...data };
-            const response = await fetch(SCRIPT_URL, {
+            const res = await fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'cors', // Importante para peticiones cruzadas
-                headers: { 'Content-Type': 'application/json' },
+                // Importante: text/plain evita preflight OPTIONS en Apps Script
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) {
-                throw new Error(`Error de red: ${response.status} ${response.statusText}`);
+            if (!res.ok) {
+                throw new Error(`Error de red: ${res.status} ${res.statusText}`);
             }
 
-            const result = await response.json();
-            
+            const text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
+            }
+
             if (!result.success) {
-                console.error("Error devuelto por el script:", result.message);
-                throw new Error(result.message);
+                throw new Error(result.message || 'Error desconocido en el servidor');
             }
             return result.data;
         }
+        // -------------------------------------------
 
         async function loadSessions() {
             const loadingEl = document.getElementById('loading-sessions');
@@ -352,7 +353,7 @@
             } catch (error) {
                 console.error("Error detallado al cargar sesiones:", error);
                 loadingEl.textContent = 'Error al cargar sesiones.';
-                showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Por favor, revisa la consola del navegador (F12) para más información y comprueba la configuración de la implementación del script.`);
+                showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`);
             }
         }
 
@@ -458,7 +459,7 @@
                 loadSessions();
             } catch (error) {
                 console.error("Error al guardar la sesión: ", error);
-                showModal('Error', 'Hubo un problema al guardar la sesión.');
+                showModal('Error', `Hubo un problema al guardar la sesión: ${error.message}`);
             }
         }
         
@@ -477,7 +478,7 @@
                         loadSessions();
                     } catch (error) {
                         console.error("Error al eliminar la sesión: ", error);
-                        showModal('Error', 'No se pudo eliminar la sesión.');
+                        showModal('Error', `No se pudo eliminar la sesión: ${error.message}`);
                     }
                 }}
             ]});
@@ -527,7 +528,8 @@
                         <div><strong class="block mb-1">Sesión(es):</strong> ${generateList(data.sesionNum)}</div>
                     </div>
                     <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Actividades</h3>${[data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act ? `<div class="mt-2"><strong class="block">Actividad ${i+1}:</strong><p class="pl-2 mt-1 text-slate-700">${act.replace(/\n/g, '<br>')}</p></div>` : '').join('')}</div>
-                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${generateList(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${generateText(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${generateList(data.tiposEvaluacion)}</div><div><strong>Criterios de Calificación:</strong> ${generateList(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${generateText(data.recursos)}</div></div>
+                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${generateList(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${generateText(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${generateList(data.tiposEvaluacion)}</div><div><strong>Crit
+erios de Calificación:</strong> ${generateList(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${generateText(data.recursos)}</div></div>
                     <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Marco Pedagógico</h3><div><strong>Competencia Específica:</strong> ${generateText(data.competenciaEspecifica)}</div><div><strong>Descriptores Operativos:</strong> ${generateText(data.descriptoresOperativos)}</div><div><strong>Competencias Clave:</strong> ${generateText(data.competenciasClave)}</div><div><strong>Contenidos Transversales:</strong> ${generateList(data.contenidosTransversales)}</div></div>
                     <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Atención a la Diversidad</h3><div><strong>Principios DUA:</strong> ${duaPrinciples} ${duaGuidelinesList}</div><div><strong>Adaptaciones:</strong> ${generateList(data.adaptacion)}</div></div>
                 </div>`;
