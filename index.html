@@ -49,9 +49,14 @@
     </header>
     <main class="flex-grow flex flex-col md:flex-row gap-4 p-4 overflow-hidden no-print">
       <aside class="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center">
-          <h2 class="text-lg font-semibold">Sesiones Guardadas</h2>
-          <button id="new-session-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Nueva</button>
+        <div class="p-4 border-b flex justify-between items-center gap-2">
+          <h2 class="text-lg font-semibold">Sesiones</h2>
+          <div class="flex gap-2">
+            <button id="search-session-btn" class="bg-slate-500 hover:bg-slate-600 text-white font-bold p-2 rounded-lg transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+            </button>
+            <button id="new-session-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Nueva</button>
+          </div>
         </div>
         <div id="session-list" class="overflow-y-auto flex-grow p-2">
           <div id="loading-sessions" class="p-4 text-center text-slate-500">Cargando sesiones...</div>
@@ -100,6 +105,39 @@
       </div>
     </div>
   </div>
+  
+  <!-- Modal Búsqueda -->
+  <div id="search-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 mx-auto">
+        <h3 class="text-xl font-bold text-slate-800 mb-4">Buscar Sesiones</h3>
+        <form id="search-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="search-materia" class="block text-sm font-medium text-slate-700 mb-1">Materia</label>
+                    <select id="search-materia" name="materia" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div>
+                    <label for="search-curso" class="block text-sm font-medium text-slate-700 mb-1">Curso</label>
+                    <select id="search-curso" name="curso" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                 <div>
+                    <label for="search-sesion" class="block text-sm font-medium text-slate-700 mb-1">Sesión</label>
+                    <select id="search-sesion" name="sesionNum" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div>
+                    <label for="search-titulo" class="block text-sm font-medium text-slate-700 mb-1">Título</label>
+                    <input type="text" id="search-titulo" name="situacionAprendizaje" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contiene el texto...">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-4 border-t">
+                <button id="search-clear-btn" type="button" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Limpiar</button>
+                <button id="search-cancel-btn" type="button" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                <button id="search-submit-btn" type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Buscar</button>
+            </div>
+        </form>
+    </div>
+  </div>
+
 
   <script type="module">
     // =============================
@@ -204,6 +242,58 @@
       document.getElementById('selectedDuaGuidelines').value = JSON.stringify([...other, ...newly]);
       hideDuaModal();
     }
+    
+    // =============================
+    // Search Modal
+    // =============================
+    function showSearchModal() {
+        const populateSelect = (selectId, data) => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '';
+            data.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                select.appendChild(o);
+            });
+        };
+        populateSelect('search-materia', appData.materias);
+        populateSelect('search-curso', appData.cursos);
+        populateSelect('search-sesion', appData.sesiones);
+        document.getElementById('search-modal').classList.remove('hidden');
+    }
+
+    function hideSearchModal() {
+        document.getElementById('search-modal').classList.add('hidden');
+    }
+
+    function handleSearch(event) {
+        event.preventDefault();
+        const form = document.getElementById('search-form');
+        const filters = {
+            materia: Array.from(form.elements['materia'].selectedOptions).map(o => o.value),
+            curso: Array.from(form.elements['curso'].selectedOptions).map(o => o.value),
+            sesionNum: Array.from(form.elements['sesionNum'].selectedOptions).map(o => o.value),
+            situacionAprendizaje: form.elements['situacionAprendizaje'].value.toLowerCase()
+        };
+
+        const filteredSessions = allSessions.filter(session => {
+            const titleMatch = !filters.situacionAprendizaje || (session.situacionAprendizaje || '').toLowerCase().includes(filters.situacionAprendizaje);
+            const materiaMatch = filters.materia.length === 0 || (session.materia || []).some(m => filters.materia.includes(m));
+            const cursoMatch = filters.curso.length === 0 || (session.curso || []).some(c => filters.curso.includes(c));
+            const sesionMatch = filters.sesionNum.length === 0 || (session.sesionNum || []).some(s => filters.sesionNum.includes(s));
+            return titleMatch && materiaMatch && cursoMatch && sesionMatch;
+        });
+
+        renderSessionList(filteredSessions);
+        hideSearchModal();
+    }
+    
+    function clearSearch() {
+        document.getElementById('search-form').reset();
+        renderSessionList(); // Render all sessions
+    }
+
 
     // =============================
     // Form helpers
@@ -394,17 +484,25 @@
     // Datos
     // =============================
     async function loadSessions(){
-      const loadingEl = document.getElementById('loading-sessions'); loadingEl.textContent='Cargando sesiones...';
+      const loadingEl = document.getElementById('loading-sessions');
+      loadingEl.textContent='Cargando sesiones...';
       try { allSessions = await apiCall('getSessions'); renderSessionList(); }
       catch (error){ console.error('Error detallado al cargar sesiones:', error); loadingEl.textContent='Error al cargar sesiones.'; showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`); }
     }
 
-    function renderSessionList(){
-      const sessionList = document.getElementById('session-list'); const loadingEl = document.getElementById('loading-sessions');
-      loadingEl.style.display = 'none'; sessionList.innerHTML = '';
-      if (!allSessions.length){ sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No hay sesiones guardadas.</p>'; return; }
-      allSessions.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
-      allSessions.forEach(session => {
+    function renderSessionList(sessionsToRender = allSessions){
+      const sessionList = document.getElementById('session-list'); 
+      const loadingEl = document.getElementById('loading-sessions');
+      if (loadingEl) {
+          loadingEl.style.display = 'none'; 
+      }
+      sessionList.innerHTML = '';
+      if (!sessionsToRender.length){ 
+          sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No se encontraron sesiones.</p>'; 
+          return; 
+      }
+      sessionsToRender.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+      sessionsToRender.forEach(session => {
         const div = document.createElement('div');
         div.className = `p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors ${currentSessionId === session.id ? 'bg-blue-100 border-blue-500' : 'hover:bg-slate-100 border-transparent'}`;
         div.dataset.id = session.id;
@@ -664,6 +762,13 @@
       document.getElementById('continue-btn').addEventListener('click', ()=>{ renderInfoSummary(); document.getElementById('form-step-1').classList.add('hidden'); document.getElementById('form-step-2').classList.remove('hidden'); document.getElementById('continue-btn').classList.add('hidden'); document.getElementById('action-buttons').classList.remove('hidden'); document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión'; });
       document.getElementById('dua-modal-cancel').addEventListener('click', hideDuaModal);
       document.getElementById('dua-modal-save').addEventListener('click', saveDuaGuidelines);
+      
+      // Listeners para la búsqueda
+      document.getElementById('search-session-btn').addEventListener('click', showSearchModal);
+      document.getElementById('search-cancel-btn').addEventListener('click', hideSearchModal);
+      document.getElementById('search-form').addEventListener('submit', handleSearch);
+      document.getElementById('search-clear-btn').addEventListener('click', clearSearch);
+
     });
   </script>
 </body>
