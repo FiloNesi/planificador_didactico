@@ -504,112 +504,37 @@
         }
 
         function printReport() {
-  if (!currentSessionId) {
-    showModal("Aviso", "Por favor, guarda la sesión antes de imprimir.");
-    return;
-  }
+            if (!currentSessionId) {
+                showModal("Aviso", "Por favor, guarda la sesión antes de imprimir.");
+                return;
+            }
+            const data = allSessions.find(s => s.id === currentSessionId);
+            if (!data) return;
 
-  const data = allSessions.find(s => s.id === currentSessionId);
-  if (!data) return;
+            const printArea = document.getElementById('print-area');
+            const situacion = data.situacionAprendizaje || 'Situación de Aprendizaje no definida';
+            const generateList = (items) => items && items.length > 0 ? `<ul class="list-disc list-inside">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<span class="text-slate-500">No especificado</span>';
+            const generateText = (text) => text ? `<p class="pl-2 mt-1 text-slate-700">${text.replace(/\n/g, '<br>')}</p>` : '<span class="text-slate-500">No especificado</span>';
+            const duaPrinciples = generateList(data.dua);
+            const duaGuidelinesList = data.duaGuidelines && data.duaGuidelines.length > 0 ? `<div><strong class="block mt-2">Pautas Específicas:</strong>${generateList(data.duaGuidelines)}</div>` : '';
 
-  // Helpers
-  const escapeHTML = (s = "") =>
-    String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-
-  const textOrMuted = (t) =>
-    t ? `<p class="mt-2">${escapeHTML(t).replace(/\n/g, "<br>")}</p>` : `<span class="muted">No especificado</span>`;
-
-  const list = (arr) =>
-    (arr && arr.length)
-      ? `<ul class="list">${arr.map(i => `<li>${escapeHTML(i)}</li>`).join("")}</ul>`
-      : `<span class="muted">No especificado</span>`;
-
-  const chips = (arr) =>
-    (arr && arr.length)
-      ? `<div class="chips">${arr.map(i => `<span class="chip">${escapeHTML(i)}</span>`).join("")}</div>`
-      : `<span class="muted">No especificado</span>`;
-
-  const title = (data.situacionAprendizaje || 'Situación de Aprendizaje no definida').split('\n')[0];
-  const subtitle = (data.situacionAprendizaje || '').split('\n').slice(1).join('\n');
-
-  const now = new Date();
-  const fecha = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
-
-  // Construcción del HTML del informe (con su CSS embebido)
-  const printArea = document.getElementById('print-area');
-  printArea.innerHTML = `
-    <style>
-      @page { size: A4; margin: 14mm; }
-      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      :root{
-        --ink:#0f172a;           /* slate-900 */
-        --muted:#64748b;        /* slate-500 */
-        --line:#e5e7eb;         /* slate-200 */
-        --bg:#ffffff;
-        --accent:#0ea5e9;       /* sky-500 */
-        --accent-soft:#e0f2fe;  /* sky-100 */
-      }
-      .report{ font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; color: var(--ink); }
-      .eyebrow{ display:inline-block; padding:.2rem .6rem; background:var(--accent-soft); color:#0369a1; border-radius:999px; font-weight:600; font-size:10pt; }
-      .title{ font-size:20pt; font-weight:800; letter-spacing:-.2px; margin:.35rem 0 0 0; }
-      .subtitle{ margin:.35rem 0 0 0; color:var(--muted); font-size:10.5pt; }
-      .meta{ display:flex; flex-wrap:wrap; gap:.4rem .6rem; margin-top:.6rem; font-size:9.5pt; color:var(--muted); }
-      .wrap{ margin-top:8mm; }
-      .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
-      .section{ margin-top:8mm; }
-      .section h3{ font-size:12pt; font-weight:800; margin:0 0 .4rem 0; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
-      .card{ border:1px solid var(--line); border-radius:12px; padding:10pt 12pt; background:var(--bg); page-break-inside:avoid; }
-      .kv{ display:grid; grid-template-columns: 2.6cm 1fr; column-gap:10pt; row-gap:6pt; font-size:10.5pt; }
-      .kv div.label{ color:var(--muted); }
-      .chips{ display:flex; flex-wrap:wrap; gap:6px; }
-      .chip{ display:inline-block; padding:3px 10px; border:1px solid var(--line); border-radius:999px; background:#f8fafc; font-size:9.5pt; }
-      .list{ margin:.2rem 0 0 0; padding-left:1.05rem; }
-      .list li{ margin:.1rem 0; }
-      .muted{ color:var(--muted); }
-      .activities ol{ counter-reset:item; margin:0; padding-left:0; }
-      .activities li{ list-style:none; counter-increment:item; position:relative; padding-left:1.6rem; margin:.35rem 0; }
-      .activities li::before{ content:counter(item); position:absolute; left:0; top:0; width:1.2rem; height:1.2rem; line-height:1.2rem; text-align:center; border-radius:999px; background:var(--accent-soft); color:#0369a1; font-weight:700; font-size:9pt; }
-      .footer{ margin-top:10mm; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:9pt; border-top:1px solid var(--line); padding-top:6pt; }
-      /* Evitar cortes feos */
-      h1,h2,h3, .activities li, .chip, .kv { page-break-inside: avoid; }
-    </style>
-
-    <div class="report">
-      <header>
-        <span class="eyebrow">Programación de sesión</span>
-        <h1 class="title">${escapeHTML(title)}</h1>
-        ${subtitle ? `<div class="subtitle">${escapeHTML(subtitle).replace(/\n/g, "<br>")}</div>` : ""}
-        <div class="meta">
-          <span><strong>Impreso:</strong> ${escapeHTML(fecha)}</span>
-          ${data.id ? `<span><strong>ID:</strong> ${escapeHTML(data.id)}</span>` : ""}
-        </div>
-      </header>
-
-      <div class="wrap grid-2">
-        <div class="card">
-          <h3>Resumen</h3>
-          <div class="kv">
-            <div class="label">Materia(s)</div>
-            <div>${chips(data.materia)}</div>
-            <div class="label">Curso(s)</div>
-            <div>${chips(data.curso)}</div>
-            <div class="label">Sesión(es)</div>
-            <div>${chips(data.sesionNum)}</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Marco pedagógico</h3>
-          <div class="kv">
-            <div class="label">Comp. Esp.</div>
-            <div>${textOrMuted(data.competenciaEspecifica)}</div>
-            <div class="label">Descriptores</div>
-            <div>${textOrMuted(data.descriptoresOperativo
+            printArea.innerHTML = `
+                <div class="p-8 font-sans space-y-6 bg-white">
+                    <h1 class="text-3xl font-bold border-b pb-2 mb-4">Programación de Sesión</h1>
+                    <div class="p-4 border rounded-lg bg-slate-50"><h2 class="text-2xl font-semibold">${situacion.split('\n')[0]}</h2><p class="mt-2">${situacion.substring(situacion.indexOf('\n') + 1).replace(/\n/g, '<br>')}</p></div>
+                    <div class="grid grid-cols-3 gap-6 text-sm border p-4 rounded-lg">
+                        <div><strong class="block mb-1">Materia(s):</strong> ${generateList(data.materia)}</div>
+                        <div><strong class="block mb-1">Curso(s):</strong> ${generateList(data.curso)}</div>
+                        <div><strong class="block mb-1">Sesión(es):</strong> ${generateList(data.sesionNum)}</div>
+                    </div>
+                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Actividades</h3>${[data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act ? `<div class="mt-2"><strong class="block">Actividad ${i+1}:</strong><p class="pl-2 mt-1 text-slate-700">${act.replace(/\n/g, '<br>')}</p></div>` : '').join('')}</div>
+                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${generateList(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${generateText(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${generateList(data.tiposEvaluacion)}</div><div><strong>Crit
+erios de Calificación:</strong> ${generateList(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${generateText(data.recursos)}</div></div>
+                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Marco Pedagógico</h3><div><strong>Competencia Específica:</strong> ${generateText(data.competenciaEspecifica)}</div><div><strong>Descriptores Operativos:</strong> ${generateText(data.descriptoresOperativos)}</div><div><strong>Competencias Clave:</strong> ${generateText(data.competenciasClave)}</div><div><strong>Contenidos Transversales:</strong> ${generateList(data.contenidosTransversales)}</div></div>
+                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Atención a la Diversidad</h3><div><strong>Principios DUA:</strong> ${duaPrinciples} ${duaGuidelinesList}</div><div><strong>Adaptaciones:</strong> ${generateList(data.adaptacion)}</div></div>
+                </div>`;
+            window.print();
+        }
 
         // --- EVENT LISTENERS ---
         document.addEventListener('DOMContentLoaded', () => {
