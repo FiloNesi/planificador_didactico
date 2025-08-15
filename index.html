@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 8px; }
@@ -18,12 +18,28 @@
     .checkbox-group { max-height: 20rem; }
     .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Estilos para la impresión */
     @media print {
       body * { visibility: hidden; }
       #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        -webkit-print-color-adjust: exact; /* Para que se impriman los colores de fondo */
+        color-adjust: exact;
+      }
       .no-print { display: none; }
     }
+    /* Clases de Prosa para Tailwind, para el contenido del informe */
+    .prose { color: #334155; max-width: 65ch; }
+    .prose a { color: #4f46e5; text-decoration: underline; }
+    .prose strong { color: #1e293b; font-weight: 600; }
+    .prose blockquote { border-left-color: #e2e8f0; }
+    .prose thead { border-bottom-color: #e2e8f0; }
+    .prose-sm { font-size: 0.875rem; line-height: 1.5; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -93,19 +109,19 @@
 
     const evaluationData = [
       { id: "1.1", text: "1.1 Construir y expresar un concepto ajustado de sí mismo reconociendo las múltiples dimensiones de su naturaleza y personalidad, así como de la dimensión cívica y moral de la misma, a partir de la investigación y el diálogo en torno a diversas concepciones sobre la naturaleza humana.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.2", text: "1.2 Identificar, gestionar y comunicar ideas, emociones, afectos y deseos con comprensión y empatía hacia las demás personas, demostrando autoestima y compartiendo un concepto adecuado de lo que deben ser las relaciones con otras personas, incluyendo el ámbito afectivo-sexual.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral a través de la práctica de la deliberación racional, el uso de conceptos éticos, y el diálogo respetuoso con los demás en torno a distintos valores y modos de vida, así como a problemas relacionados con el ejercicio de los derechos individuales, el uso responsable y seguro de las redes, las conductas adictivas y el acoso escolar.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica, respetuosa, democrática y comprometida con el bien común, a partir de la investigación sobre la naturaleza social y política del ser humano y el uso y comprensión crítica de los conceptos de ley, poder, soberanía, justicia, Estado, democracia, memoria democrática, dignidad y derechos humanos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa y democrática a través del conocimiento del movimiento asociativo y la participación respetuosa, dialogante y constructiva en actividades de grupo que impliquen tomar decisiones colectivas, planificar acciones coordinadas y resolver problemas aplicando procedimientos y principios cívicos, éticos y democráticos explícitos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.3", text: "2.3 Contribuir a generar un compromiso activo con el bien común a través del análisis y la toma razonada y dialogante de posición en torno a cuestiones éticas de actualidad como la lucha contra la desigualdad y la pobreza, el derecho al trabajo, la salud, la educación y la justicia, así como sobre los fines y límites éticos de la investigación científica.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.4", text: "2.4 Tomar consciencia de la lucha por una efectiva igualdad de género, y del problema de la violencia y explotación sobre las mujeres, a través del análisis de las diversas olas y corrientes del feminismo y de las medidas de prevención de la desigualdad, la violencia y la discriminación por razón de género y orientación sexual, mostrando igualmente conocimiento de los derechos LGTBIQ+ y reconociendo la necesidad de respetarlos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.5", text: "2.5 Contribuir activamente al bienestar social adoptando una posición propia, explícita, informada y éticamente fundamentada sobre el valor y pertinencia de los derechos humanos, el respeto por la diversidad etnocultural, la consideración de los bienes públicos globales y la percepción del valor social de los impuestos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.6", text: "2.6 Contribuir a la consecución de un mundo más justo y pacífico a través del análisis y reconocimiento de la historia democrática de nuestro país y de las funciones del Estado de derecho y sus instituciones, los organismos internacionales, las asociaciones civiles y los cuerpos y fuerzas de seguridad del Estado, en su empeño por lograr la paz y la seguridad integral, atender a las víctimas de la violencia y promover la solidaridad y cooperación entre las personas y los pueblos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "3.1", text: "3.1 Describir las relaciones históricas de interconexión, interdependencia y ecodependencia entre nuestras vidas y el entorno a partir del análisis de las causas y consecuencias de los más graves problemas ecosociales que nos afectan.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.2", text: "3.2 Valorar distintos planteamientos científicos, políticos y éticos con los que afrontar la emergencia climática y la crisis medioambiental a través de la exposición y el debate argumental en torno a los mismos.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.3", text: "3.3 Promover estilos de vida éticamente comprometidos con el logro de un desarrollo sostenible, contribuyendo por sí mismo y en su entorno a la prevención de los residuos, la gestión sostenible de los recursos, la movilidad segura, sostenible y saludable, el comercio justo, el consumo responsable, el cuidado del patrimonio natural, el respeto por la diversidad etnocultural, y el cuidado y protección de los animales.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones, de estima y cuidado de sí mismo y de los otros, identificando, analizando y expresando de manera asertiva las propias emociones y sentimientos, y reconociendo y valorando los de los demás en distintos contextos y en torno a actividades creativas y de reflexión individual o dialogada sobre cuestiones éticas y cívicas.", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
-         ];
+      { id: "1.2", text: "1.2 Identificar, gestionar y comunicar ideas, emociones, afectos y deseos con comprensión y empatía hacia las demás personas, demostrando autoestima y compartiendo un concepto adecuado de lo que deben ser las relaciones con otras personas, incluyendo el ámbito afectivo-sexual.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
+      { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral a través de la práctica de la deliberación racional, el uso de conceptos éticos, y el diálogo respetuoso con los demás en torno a distintos valores y modos de vida, así como a problemas relacionados con el ejercicio de los derechos individuales, el uso responsable y seguro de las redes, las conductas adictivas y el acoso escolar.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
+      { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica, respetuosa, democrática y comprometida con el bien común, a partir de la investigación sobre la naturaleza social y política del ser humano y el uso y comprensión crítica de los conceptos de ley, poder, soberanía, justicia, Estado, democracia, memoria democrática, dignidad y derechos humanos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa y democrática a través del conocimiento del movimiento asociativo y la participación respetuosa, dialogante y constructiva en actividades de grupo que impliquen tomar decisiones colectivas, planificar acciones coordinadas y resolver problemas aplicando procedimientos y principios cívicos, éticos y democráticos explícitos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.3", text: "2.3 Contribuir a generar un compromiso activo con el bien común a través del análisis y la toma razonada y dialogante de posición en torno a cuestiones éticas de actualidad como la lucha contra la desigualdad y la pobreza, el derecho al trabajo, la salud, la educación y la justicia, así como sobre los fines y límites éticos de la investigación científica.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.4", text: "2.4 Tomar consciencia de la lucha por una efectiva igualdad de género, y del problema de la violencia y explotación sobre las mujeres, a través del análisis de las diversas olas y corrientes del feminismo y de las medidas de prevención de la desigualdad, la violencia y la discriminación por razón de género y orientación sexual, mostrando igualmente conocimiento de los derechos LGTBIQ+ y reconociendo la necesidad de respetarlos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.5", text: "2.5 Contribuir activamente al bienestar social adoptando una posición propia, explícita, informada y éticamente fundamentada sobre el valor y pertinencia de los derechos humanos, el respeto por la diversidad etnocultural, la consideración de los bienes públicos globales y la percepción del valor social de los impuestos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.6", text: "2.6 Contribuir a la consecución de un mundo más justo y pacífico a través del análisis y reconocimiento de la historia democrática de nuestro país y de las funciones del Estado de derecho y sus instituciones, los organismos internacionales, las asociaciones civiles y los cuerpos y fuerzas de seguridad del Estado, en su empeño por lograr la paz y la seguridad integral, atender a las víctimas de la violencia y promover la solidaridad y cooperación entre las personas y los pueblos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "3.1", text: "3.1 Describir las relaciones históricas de interconexión, interdependencia y ecodependencia entre nuestras vidas y el entorno a partir del análisis de las causas y consecuencias de los más graves problemas ecosociales que nos afectan.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "3.2", text: "3.2 Valorar distintos planteamientos científicos, políticos y éticos con los que afrontar la emergencia climática y la crisis medioambiental a través de la exposición y el debate argumental en torno a los mismos.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "3.3", text: "3.3 Promover estilos de vida éticamente comprometidos con el logro de un desarrollo sostenible, contribuyendo por sí mismo y en su entorno a la prevención de los residuos, la gestión sostenible de los recursos, la movilidad segura, sostenible y saludable, el comercio justo, el consumo responsable, el cuidado del patrimonio natural, el respeto por la diversidad etnocultural, y el cuidado y protección de los animales.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones, de estima y cuidado de sí mismo y de los otros, identificando, analizando y expresando de manera asertiva las propias emociones y sentimientos, y reconociendo y valorando los de los demás en distintos contextos y en torno a actividades creativas y de reflexión individual o dialogada sobre cuestiones éticas y cívicas.", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
+    ];
 
     const duaData = {
       principle1: { title: "I. Proporcionar múltiples medios de representación", guidelines: [
@@ -323,11 +339,15 @@
           { id:'dua', label:'DUA', type:'dua-group' },
           { id:'adaptacion', label:'Adaptación', type:'select-multiple', options: appData.adaptaciones },
         ]},
+        { step:2, legend: 'Observaciones', fields:[
+          { id:'observaciones', label:'Observaciones y notas adicionales', type:'textarea' },
+        ]},
       ];
       fieldsets.forEach(fs => {
         const fsEl = document.createElement('fieldset'); fsEl.className='border border-slate-200 p-4 rounded-lg';
         const legend = document.createElement('legend'); legend.className='text-md font-semibold px-2 text-slate-600'; legend.textContent=fs.legend; fsEl.appendChild(legend);
-        const grid = document.createElement('div'); grid.className='grid grid-cols-1 md:grid-cols-2 gap-4';
+        const grid = document.createElement('div'); 
+        grid.className = fs.fields.length > 1 ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4';
         fs.fields.forEach(f => grid.appendChild(createFormField(f.id, f.label, f.type, f.options)));
         fsEl.appendChild(grid);
         (fs.step===1?step1:step2).appendChild(fsEl);
@@ -424,7 +444,7 @@
     async function saveSession(){
       const form = document.getElementById('session-form');
       const data = { id: currentSessionId };
-      ['situacionAprendizaje','actividad1','actividad2','actividad3','actividad4','instrumentosEvaluacion','recursos','competenciaEspecifica','descriptoresOperativos','competenciasClave'].forEach(id=>{ if (form.elements[id]) data[id] = form.elements[id].value; });
+      ['situacionAprendizaje','actividad1','actividad2','actividad3','actividad4','instrumentosEvaluacion','recursos','competenciaEspecifica','descriptoresOperativos','competenciasClave', 'observaciones'].forEach(id=>{ if (form.elements[id]) data[id] = form.elements[id].value; });
       ['materia','curso','sesionNum','tiposEvaluacion','criteriosCalificacion','contenidosTransversales','adaptacion'].forEach(id=>{ if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o=>o.value); });
       data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb=>cb.value);
       data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb=>cb.value);
@@ -454,31 +474,157 @@
       showModal('Sesión Duplicada','Se han copiado los datos. Revisa la información y pulsa "Guardar" para crear la nueva sesión.');
     }
 
-    function printReport(){
-      if (!currentSessionId){ showModal('Aviso','Por favor, guarda la sesión antes de imprimir.'); return; }
-      const data = allSessions.find(s=>s.id===currentSessionId); if (!data) return;
-      const printArea = document.getElementById('print-area');
-      const situacion = data.situacionAprendizaje || 'Situación de Aprendizaje no definida';
-      const list = (items)=> items && items.length? `<ul class=\"list-disc list-inside\">${items.map(i=>`<li>${i}</li>`).join('')}</ul>` : '<span class=\"text-slate-500\">No especificado</span>';
-      const text = (t)=> t? `<p class=\"pl-2 mt-1 text-slate-700\">${t.replace(/\n/g,'<br>')}</p>` : '<span class=\"text-slate-500\">No especificado</span>';
-      const dua = list(data.dua);
-      const duaGL = data.duaGuidelines && data.duaGuidelines.length? `<div><strong class=\"block mt-2\">Pautas Específicas:</strong>${list(data.duaGuidelines)}</div>` : '';
-      printArea.innerHTML = `
-        <div class=\"p-8 font-sans space-y-6 bg-white\">
-          <h1 class=\"text-3xl font-bold border-b pb-2 mb-4\">Programación de Sesión</h1>
-          <div class=\"p-4 border rounded-lg bg-slate-50\"><h2 class=\"text-2xl font-semibold\">${situacion.split('\n')[0]}</h2><p class=\"mt-2\">${situacion.substring(situacion.indexOf('\n')+1).replace(/\n/g,'<br>')}</p></div>
-          <div class=\"grid grid-cols-3 gap-6 text-sm border p-4 rounded-lg\">
-            <div><strong class=\"block mb-1\">Materia(s):</strong> ${list(data.materia)}</div>
-            <div><strong class=\"block mb-1\">Curso(s):</strong> ${list(data.curso)}</div>
-            <div><strong class=\"block mb-1\">Sesión(es):</strong> ${list(data.sesionNum)}</div>
-          </div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Actividades</h3>${[data.actividad1,data.actividad2,data.actividad3,data.actividad4].map((a,i)=>a?`<div class=\"mt-2\"><strong class=\"block\">Actividad ${i+1}:</strong><p class=\"pl-2 mt-1 text-slate-700\">${a.replace(/\n/g,'<br>')}</p></div>`:'').join('')}</div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${list(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${text(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${list(data.tiposEvaluacion)}</div><div><strong>Criterios de Calificación:</strong> ${list(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${text(data.recursos)}</div></div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Marco Pedagógico</h3><div><strong>Competencia Específica:</strong> ${text(data.competenciaEspecifica)}</div><div><strong>Descriptores Operativos:</strong> ${text(data.descriptoresOperativos)}</div><div><strong>Competencias Clave:</strong> ${text(data.competenciasClave)}</div><div><strong>Contenidos Transversales:</strong> ${list(data.contenidosTransversales)}</div></div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Atención a la Diversidad</h3><div><strong>Principios DUA:</strong> ${dua} ${duaGL}</div><div><strong>Adaptaciones:</strong> ${list(data.adaptacion)}</div></div>
-        </div>`;
-      window.print();
+    function printReport() {
+        if (!currentSessionId) {
+            showModal('Aviso', 'Por favor, guarda la sesión antes de imprimir.');
+            return;
+        }
+        const data = allSessions.find(s => s.id === currentSessionId);
+        if (!data) return;
+
+        const printArea = document.getElementById('print-area');
+
+        // --- Funciones de ayuda para construir el informe ---
+        const createIcon = (path) => `<svg class="w-6 h-6 mr-3 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
+
+        const icons = {
+            situacion: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            actividades: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.085a2 2 0 00-1.736.97l-1.9 3.8a2 2 0 00.23 2.16l3.5 3.5m7-10L7 5"></path>'),
+            evaluacion: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            marco: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h1a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.737 16.95l.826.826m8.334-8.334l.826.826m-1.06-7.553l.267.267m-1.623 1.623l.267.267M16.95 7.737l.826.826M12 21a9 9 0 100-18 9 9 0 000 18z"></path>'),
+            diversidad: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>'),
+            info: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            observaciones: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>')
+        };
+
+        const createList = (items) => {
+            if (!items || items.length === 0) return '<p class="text-slate-500 italic mt-2">No especificado</p>';
+            return `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+        };
+
+        const createText = (content) => {
+            if (!content || content.trim() === '') return '<p class="text-slate-500 italic mt-2">No especificado</p>';
+            return `<div class="prose prose-sm max-w-none mt-2">${content.replace(/\n/g, '<br>')}</div>`;
+        };
+
+        const createCard = (title, icon, content) => `
+            <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        ${icon}
+                        <h3 class="text-xl font-bold text-slate-800">${title}</h3>
+                    </div>
+                    <div class="mt-4 text-slate-600 pl-9">
+                        ${content}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const createSidebarCard = (title, icon, content) => `
+            <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200">
+                <div class="p-5">
+                    <div class="flex items-center border-b border-slate-200 pb-3 mb-3">
+                        ${icon}
+                        <h4 class="text-md font-bold text-slate-700">${title}</h4>
+                    </div>
+                    <div class="text-sm text-slate-600">${content}</div>
+                </div>
+            </div>
+        `;
+
+        // --- Procesamiento de datos ---
+        const situacion = data.situacionAprendizaje || '';
+        const situacionTitle = situacion.split('\n')[0] || 'Situación de Aprendizaje sin Título';
+        const situacionBody = situacion.substring(situacion.indexOf('\n') + 1);
+
+        const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4]
+            .map((act, i) => act ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '')
+            .filter(Boolean)
+            .join('<hr class="my-4 border-slate-200">');
+
+        const evaluacionContent = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div>
+                <div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div>
+                <div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div>
+                <div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createList(data.criteriosCalificacion)}</div>
+                <div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div>
+            </div>
+        `;
+
+        const marcoContent = `
+            <strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createList(data.contenidosTransversales)}
+        `;
+
+        const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
+        const diversidadContent = `
+            <strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}
+            ${duaGuidelines}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createList(data.adaptacion)}
+        `;
+        
+        const observacionesContent = data.observaciones && data.observaciones.trim() !== ''
+            ? `<div class="prose prose-sm max-w-none mt-2">${data.observaciones.replace(/\n/g, '<br>')}</div>`
+            : `<div class="h-48"></div>`;
+
+        const infoGeneralContent = `
+            <strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}
+            <hr class="my-3 border-slate-200">
+            <strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}
+        `;
+
+        // --- Estructura HTML del informe ---
+        printArea.innerHTML = `
+            <div class="p-8 bg-slate-50 font-sans">
+                <header class="text-center mb-10">
+                    <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1>
+                    <p class="mt-2 text-lg text-slate-500">Informe Detallado</p>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Columna principal -->
+                    <main class="lg:col-span-2">
+                        ${createCard('Situación de Aprendizaje', icons.situacion, `
+                            <h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2>
+                            <div class="prose prose-slate max-w-none mt-4">${situacionBody.replace(/\n/g, '<br>')}</div>
+                        `)}
+                        
+                        ${createCard('Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}
+                    </main>
+
+                    <!-- Barra lateral -->
+                    <aside>
+                        ${createSidebarCard('Información General', icons.info, infoGeneralContent)}
+                        ${createSidebarCard('Marco Pedagógico', icons.marco, marcoContent)}
+                    </aside>
+                </div>
+
+                <!-- Secciones a todo lo ancho -->
+                <div class="mt-2">
+                    ${createCard('Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}
+                    ${createCard('Atención a la Diversidad', icons.diversidad, diversidadContent)}
+                    ${createCard('Observaciones', icons.observaciones, observacionesContent)}
+                </div>
+
+                <footer class="text-center mt-10 pt-6 border-t border-slate-200">
+                    <p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p>
+                </footer>
+            </div>
+        `;
+        window.print();
     }
+
 
     // =============================
     // DOM Ready
