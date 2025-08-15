@@ -1,565 +1,153 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificador Didáctico de Filosofía</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        select[multiple] { padding: 0.5rem; }
-        .checkbox-group { max-height: 20rem; }
-        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .no-print { display: none; }
+/***** CONFIG *****/
+const SPREADSHEET_ID = ''; // opcional: pega aquí el ID de tu Sheet. Si lo dejas vacío, se creará uno nuevo la primera vez.
+const SHEET_NAME = 'Sessions';
+
+/***** CORE *****/
+function doGet(e) {
+  return _json({ success: true, data: 'OK' });
+}
+
+function doPost(e) {
+  try {
+    let payload = {};
+    if (e.postData && e.postData.contents) {
+      // Llega como text/plain con JSON en el cuerpo
+      payload = JSON.parse(e.postData.contents);
+    } else if (e.parameter && e.parameter.action) {
+      payload = e.parameter; // por si usas x-www-form-urlencoded
+    }
+
+    const action = payload.action;
+    if (!action) return _jsonError('Falta "action"');
+
+    switch (action) {
+      case 'getSessions':
+        return _json({ success: true, data: getSessions_() });
+
+      case 'saveSession':
+        if (!payload.data || typeof payload.data !== 'object') {
+          return _jsonError('Falta "data" con la sesión');
         }
-    </style>
-</head>
-<body class="bg-slate-100 text-slate-800">
+        return _json({ success: true, data: saveSession_(payload.data) });
 
-    <div id="app-container" class="flex flex-col h-screen">
-        <header class="bg-white shadow-md p-4 flex justify-between items-center no-print">
-            <h1 class="text-2xl font-bold text-slate-700">Planificador Didáctico</h1>
-        </header>
-        <main class="flex-grow flex flex-col md:flex-row gap-4 p-4 overflow-hidden no-print">
-            <aside class="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
-                <div class="p-4 border-b flex justify-between items-center">
-                    <h2 class="text-lg font-semibold">Sesiones Guardadas</h2>
-                    <button id="new-session-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Nueva</button>
-                </div>
-                <div id="session-list" class="overflow-y-auto flex-grow p-2">
-                    <div id="loading-sessions" class="p-4 text-center text-slate-500">Cargando sesiones...</div>
-                </div>
-            </aside>
-            <section class="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
-                <div id="form-header" class="p-4 border-b flex justify-between items-center flex-wrap gap-2">
-                    <h2 id="form-title" class="text-lg font-semibold">Selecciona una sesión o crea una nueva</h2>
-                    <div id="action-buttons" class="flex gap-2 hidden">
-                        <button id="save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar</button>
-                        <button id="duplicate-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Duplicar</button>
-                        <button id="print-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Imprimir</button>
-                        <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Eliminar</button>
-                    </div>
-                </div>
-                <div id="form-container" class="overflow-y-auto flex-grow p-4">
-                    <form id="session-form"></form>
-                    <div id="welcome-message" class="text-center text-slate-500 p-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        <p class="mt-4 text-lg">Haz clic en "Nueva" para empezar a planificar tu primera sesión.</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-    <div id="print-area"></div>
-    <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-1/3 mx-auto flex flex-col items-center text-center">
-            <div id="modal-spinner" class="spinner hidden mb-4"></div>
-            <h3 id="modal-title" class="text-xl font-bold text-slate-800"></h3>
-            <p id="modal-text" class="py-4 text-slate-600"></p>
-            <div id="modal-buttons" class="text-right space-x-2"></div>
-        </div>
-    </div>
-    <div id="dua-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-1/2 mx-auto">
-            <h3 id="dua-modal-title" class="text-xl font-bold text-slate-800"></h3>
-            <div id="dua-modal-content" class="py-4 space-y-2 max-h-96 overflow-y-auto"></div>
-            <div id="dua-modal-buttons" class="text-right space-x-2">
-                <button id="dua-modal-cancel" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
-                <button id="dua-modal-save" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar Pautas</button>
-            </div>
-        </div>
-    </div>
+      case 'deleteSession':
+        if (!payload.id) return _jsonError('Falta "id"');
+        deleteSession_(payload.id);
+        return _json({ success: true, data: true });
 
-    <script type="module">
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfPILWfcf8n3N7aS1SwQIHhCn5EC7ShlorH49w7BNVN8c453jbqmC6pSLn3lDGGrJQ6g/exec";
+      default:
+        return _jsonError(`Acción no reconocida: ${action}`);
+    }
+  } catch (err) {
+    return _json({ success: false, message: String(err) });
+  }
+}
 
-        const evaluationData = [
-            { id: "1.1", text: "1.1 Construir y expresar un concepto ajustado de sí mismo...", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.2", text: "1.2 Identificar, gestionar y comunicar ideas...", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral...", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa...", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.3", text: "2.3 Promover estilos de vida éticamente comprometidos...", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones...", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
-        ];
-        const duaData = {
-            'principle1': { title: "I. Proporcionar múltiples medios de representación", guidelines: [ { id: '1.1', text: 'Pauta 1.1: Ofrecer opciones para la percepción' }, { id: '1.2', text: 'Pauta 1.2: Ofrecer opciones para el lenguaje y los símbolos' }, { id: '1.3', text: 'Pauta 1.3: Ofrecer opciones para la comprensión' } ] },
-            'principle2': { title: "II. Proporcionar múltiples medios de acción y expresión", guidelines: [ { id: '2.1', text: 'Pauta 4: Ofrecer opciones para la acción física' }, { id: '2.2', text: 'Pauta 5: Ofrecer opciones para la expresión y la comunicación' }, { id: '2.3', text: 'Pauta 6: Ofrecer opciones para las funciones ejecutivas' } ] },
-            'principle3': { title: "III. Proporcionar múltiples formas de implicación", guidelines: [ { id: '3.1', text: 'Pauta 7: Ofrecer opciones para captar el interés' }, { id: '3.2', text: 'Pauta 8: Ofrecer opciones para mantener el esfuerzo y la persistencia' }, { id: '3.3', text: 'Pauta 9: Ofrecer opciones para la autorregulación' } ] }
-        };
-        const appData = {
-            materias: ["Filosofía", "Hª de la Filosofía", "Valores Éticos", "Psicología"],
-            cursos: ["1º ESO", "2º ESO", "3º ESO", "4º ESO", "1º Bachillerato", "2º Bachillerato"],
-            sesiones: Array.from({length: 25}, (_, i) => `Sesión ${i + 1}`),
-            metodologias: ["Aprendizaje Basado en Proyectos (ABP)", "Flipped Classroom", "Gamificación", "Aprendizaje Cooperativo", "Clase Magistral Interactiva", "Debate Dirigido"],
-            tiposEvaluacion: ["Diagnóstica", "Formativa", "Sumativa", "Autoevaluación", "Coevaluación"],
-            criteriosCalificacion: ["Examen escrito (40%)", "Trabajo de investigación (30%)", "Participación en clase (10%)", "Portfolio (20%)"],
-            adaptaciones: ["Adaptación curricular no significativa", "Adaptación curricular significativa", "Actividades de ampliación", "Actividades de refuerzo"],
-            contenidosTransversales: ["Educación para la paz", "Educación para la igualdad de género", "Educación ambiental", "Educación para la salud"]
-        };
+/***** IMPLEMENTACIÓN *****/
+function getSessions_() {
+  const sh = _getSheet_();
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const headers = values[0];
+  const rows = values.slice(1);
 
-        let currentSessionId = null;
-        let currentDuaPrincipleKey = null;
-        let allSessions = [];
+  const COL_ID = headers.indexOf('id');
+  const COL_CREATED = headers.indexOf('createdAt');
+  const COL_UPDATED = headers.indexOf('updatedAt');
+  const COL_DATA = headers.indexOf('data');
 
-        function showModal(title, text, options = {}) {
-            const { showSpinner = false, buttons = [{text: 'OK', class: 'bg-blue-500', callback: hideModal}] } = options;
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-text').textContent = text;
-            document.getElementById('modal-spinner').style.display = showSpinner ? 'block' : 'none';
-            const buttonsContainer = document.getElementById('modal-buttons');
-            buttonsContainer.innerHTML = '';
-            buttons.forEach(btnInfo => {
-                const button = document.createElement('button');
-                button.textContent = btnInfo.text;
-                button.className = `text-white font-bold py-2 px-4 rounded-lg transition-colors ${btnInfo.class}`;
-                button.addEventListener('click', () => { hideModal(); if(btnInfo.callback) btnInfo.callback(); });
-                buttonsContainer.appendChild(button);
-            });
-            document.getElementById('modal').classList.remove('hidden');
-        }
-        function hideModal() { document.getElementById('modal').classList.add('hidden'); }
-        function showDuaModal(principleKey) {
-            currentDuaPrincipleKey = principleKey;
-            const principle = duaData[principleKey];
-            document.getElementById('dua-modal-title').textContent = principle.title;
-            const content = document.getElementById('dua-modal-content');
-            content.innerHTML = '';
-            const savedSelections = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
-            principle.guidelines.forEach(guideline => {
-                const cbWrapper = document.createElement('div');
-                cbWrapper.className = 'flex items-center';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `dua-guideline-${guideline.id}`;
-                checkbox.value = guideline.text;
-                checkbox.checked = savedSelections.includes(guideline.text);
-                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500';
-                const label = document.createElement('label');
-                label.htmlFor = checkbox.id;
-                label.textContent = guideline.text;
-                label.className = 'ml-3 text-sm text-slate-600';
-                cbWrapper.appendChild(checkbox);
-                cbWrapper.appendChild(label);
-                content.appendChild(cbWrapper);
-            });
-            document.getElementById('dua-modal').classList.remove('hidden');
-        }
-        function hideDuaModal() { currentDuaPrincipleKey = null; document.getElementById('dua-modal').classList.add('hidden'); }
-        function saveDuaGuidelines() {
-            const newlySelected = Array.from(document.querySelectorAll('#dua-modal-content input[type="checkbox"]:checked')).map(cb => cb.value);
-            const previouslySaved = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
-            const guidelinesForCurrentPrinciple = duaData[currentDuaPrincipleKey].guidelines.map(g => g.text);
-            const otherGuidelines = previouslySaved.filter(g => !guidelinesForCurrentPrinciple.includes(g));
-            document.getElementById('selectedDuaGuidelines').value = JSON.stringify([...otherGuidelines, ...newlySelected]);
-            hideDuaModal();
-        }
+  return rows
+    .filter(r => r[COL_ID]) // filas válidas
+    .map(r => {
+      const obj = JSON.parse(r[COL_DATA] || '{}');
+      obj.id = r[COL_ID];
+      obj.createdAt = r[COL_CREATED];
+      obj.updatedAt = r[COL_UPDATED];
+      return obj;
+    });
+}
 
-        function createFormField(id, label, type, options = []) {
-            const wrapper = document.createElement('div');
-            const labelEl = document.createElement('label');
-            labelEl.setAttribute('for', id);
-            labelEl.className = "block text-sm font-medium text-slate-700 mb-1";
-            labelEl.textContent = label;
-            wrapper.appendChild(labelEl);
+function saveSession_(data) {
+  const sh = _getSheet_();
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
 
-            let field;
-            if (type === 'textarea') {
-                field = document.createElement('textarea');
-                field.rows = 3;
-                field.className = "w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500";
-            } else if (type === 'readonly-textarea') {
-                field = document.createElement('textarea');
-                field.rows = 3;
-                field.readOnly = true;
-                field.className = "w-full p-2 border border-slate-300 rounded-md shadow-sm bg-slate-100 focus:ring-0 focus:border-slate-300 cursor-not-allowed";
-            } else if (type === 'select-multiple') {
-                field = document.createElement('select');
-                field.multiple = true;
-                field.className = "w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500";
-                options.forEach(opt => {
-                    const optionEl = document.createElement('option');
-                    optionEl.value = opt;
-                    optionEl.textContent = opt;
-                    field.appendChild(optionEl);
-                });
-            } else if (type === 'checkbox-group') {
-                field = document.createElement('div');
-                field.className = "w-full p-2 border border-slate-300 rounded-md shadow-sm overflow-y-auto checkbox-group";
-                options.forEach(opt => {
-                    const checkboxWrapper = document.createElement('div');
-                    checkboxWrapper.className = 'flex items-start my-2';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `${id}-${opt.id}`;
-                    checkbox.name = id;
-                    checkbox.value = opt.text;
-                    checkbox.className = 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mt-1 flex-shrink-0';
-                    const label = document.createElement('label');
-                    label.htmlFor = checkbox.id;
-                    label.textContent = opt.text;
-                    label.className = 'ml-3 text-sm text-slate-600';
-                    checkboxWrapper.appendChild(checkbox);
-                    checkboxWrapper.appendChild(label);
-                    field.appendChild(checkboxWrapper);
-                });
-            } else if (type === 'dua-group') {
-                field = document.createElement('div');
-                field.className = "w-full p-2 border border-slate-300 rounded-md shadow-sm space-y-3";
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.id = 'selectedDuaGuidelines';
-                field.appendChild(hiddenInput);
-                Object.entries(duaData).forEach(([key, value]) => {
-                    const itemWrapper = document.createElement('div');
-                    itemWrapper.className = 'flex items-center justify-between';
-                    const cbWrapper = document.createElement('div');
-                    cbWrapper.className = 'flex items-center';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `dua-${key}`;
-                    checkbox.name = 'dua';
-                    checkbox.value = value.title;
-                    checkbox.className = 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500';
-                    const label = document.createElement('label');
-                    label.htmlFor = checkbox.id;
-                    label.textContent = value.title;
-                    label.className = 'ml-3 text-sm text-slate-600';
-                    cbWrapper.appendChild(checkbox);
-                    cbWrapper.appendChild(label);
-                    itemWrapper.appendChild(cbWrapper);
-                    if (value.guidelines.length > 0) {
-                        const button = document.createElement('button');
-                        button.type = 'button';
-                        button.textContent = 'Seleccionar Pautas';
-                        button.className = 'text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-1 px-3 rounded-lg transition-colors';
-                        button.addEventListener('click', () => showDuaModal(key));
-                        itemWrapper.appendChild(button);
-                    }
-                    field.appendChild(itemWrapper);
-                });
-            }
-            field.id = id;
-            if (type !== 'checkbox-group' && type !== 'dua-group') field.name = id;
-            wrapper.appendChild(field);
-            return wrapper;
-        }
+  const COL_ID = headers.indexOf('id') + 1;
+  const COL_CREATED = headers.indexOf('createdAt') + 1;
+  const COL_UPDATED = headers.indexOf('updatedAt') + 1;
+  const COL_DATA = headers.indexOf('data') + 1;
 
-        function updateDerivedFields() {
-            const selectedCriteriaTexts = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
-            const allCesp = new Set();
-            const allDescriptores = new Set();
-            const allClaves = new Set();
-            evaluationData.forEach(criterion => {
-                if (selectedCriteriaTexts.includes(criterion.text)) {
-                    allCesp.add(criterion.cesp);
-                    criterion.descriptores.forEach(d => allDescriptores.add(d));
-                    criterion.claves.forEach(c => allClaves.add(c));
-                }
-            });
-            document.getElementById('competenciaEspecifica').value = [...allCesp].join(', ');
-            document.getElementById('descriptoresOperativos').value = [...allDescriptores].join(', ');
-            document.getElementById('competenciasClave').value = [...allClaves].join(', ');
-        }
+  const now = new Date();
+  let id = data.id || null;
 
-        function buildForm() {
-            const form = document.getElementById('session-form');
-            form.innerHTML = ''; 
-            const step1Container = document.createElement('div');
-            step1Container.id = 'form-step-1';
-            step1Container.className = 'space-y-6';
-            const step2Container = document.createElement('div');
-            step2Container.id = 'form-step-2';
-            step2Container.className = 'hidden space-y-6';
-            const fieldsets = [
-                { step: 1, legend: 'Información General', fields: [ { id: 'situacionAprendizaje', label: 'Situación de Aprendizaje', type: 'textarea' }, { id: 'materia', label: 'Materia', type: 'select-multiple', options: appData.materias }, { id: 'curso', label: 'Curso', type: 'select-multiple', options: appData.cursos }, { id: 'sesionNum', label: 'Nº de la Sesión', type: 'select-multiple', options: appData.sesiones }, ]},
-                { step: 2, legend: 'Actividades', fields: [ { id: 'actividad1', label: 'Actividad 1', type: 'textarea' }, { id: 'actividad2', label: 'Actividad 2', type: 'textarea' }, { id: 'actividad3', label: 'Actividad 3', type: 'textarea' }, { id: 'actividad4', label: 'Actividad 4', type: 'textarea' }, ]},
-                { step: 2, legend: 'Evaluación', fields: [ { id: 'criteriosEvaluacion', label: 'Criterios de Evaluación', type: 'checkbox-group', options: evaluationData }, { id: 'instrumentosEvaluacion', label: 'Instrumentos de Evaluación', type: 'textarea' }, { id: 'tiposEvaluacion', label: 'Tipos de Evaluación', type: 'select-multiple', options: appData.tiposEvaluacion }, { id: 'criteriosCalificacion', label: 'Criterios de Calificación', type: 'select-multiple', options: appData.criteriosCalificacion }, { id: 'recursos', label: 'Recursos', type: 'textarea' }, ]},
-                { step: 2, legend: 'Marco Pedagógico (Automático)', fields: [ { id: 'competenciaEspecifica', label: 'Competencia Específica', type: 'readonly-textarea' }, { id: 'descriptoresOperativos', label: 'Descriptores Operativos', type: 'readonly-textarea' }, { id: 'competenciasClave', label: 'Competencias Clave', type: 'readonly-textarea' }, { id: 'contenidosTransversales', label: 'Contenidos Transversales', type: 'select-multiple', options: appData.contenidosTransversales }, ]},
-                { step: 2, legend: 'Atención a la Diversidad', fields: [ { id: 'dua', label: 'DUA', type: 'dua-group' }, { id: 'adaptacion', label: 'Adaptación', type: 'select-multiple', options: appData.adaptaciones }, ]}
-            ];
-            fieldsets.forEach(fsInfo => {
-                const fieldset = document.createElement('fieldset');
-                fieldset.className = 'border border-slate-200 p-4 rounded-lg';
-                const legend = document.createElement('legend');
-                legend.className = 'text-md font-semibold px-2 text-slate-600';
-                legend.textContent = fsInfo.legend;
-                fieldset.appendChild(legend);
-                const grid = document.createElement('div');
-                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-                fsInfo.fields.forEach(fieldInfo => grid.appendChild(createFormField(fieldInfo.id, fieldInfo.label, fieldInfo.type, fieldInfo.options)));
-                fieldset.appendChild(grid);
-                if (fsInfo.step === 1) step1Container.appendChild(fieldset);
-                else step2Container.appendChild(fieldset);
-            });
-            const continueBtn = document.createElement('button');
-            continueBtn.type = 'button';
-            continueBtn.id = 'continue-btn';
-            continueBtn.textContent = 'Continuar';
-            continueBtn.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors';
-            step1Container.appendChild(continueBtn);
-            form.appendChild(step1Container);
-            form.appendChild(step2Container);
-            form.addEventListener('change', (event) => { if (event.target.name === 'criteriosEvaluacion') { updateDerivedFields(); } });
-        }
+  if (id) {
+    // actualizar
+    const row = _findRowById_(sh, id);
+    if (!row) throw new Error('No se encontró la sesión con ese id');
+    sh.getRange(row, COL_DATA).setValue(JSON.stringify(_stripId_(data)));
+    sh.getRange(row, COL_UPDATED).setValue(now);
+    return { id, updatedAt: now };
+  } else {
+    // crear
+    id = Utilities.getUuid();
+    const row = sh.getLastRow() + 1;
+    sh.getRange(row, COL_ID, 1, 4).setValues([[id, now, now, JSON.stringify(_stripId_(data))]]);
+    return { id, createdAt: now, updatedAt: now };
+  }
+}
 
-        // --------- Capa de API (anti-CORS) ---------
-        async function apiCall(action, data = {}) {
-            const payload = { action, ...data };
-            const res = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                // Importante: text/plain evita preflight OPTIONS en Apps Script
-                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                body: JSON.stringify(payload)
-            });
+function deleteSession_(id) {
+  const sh = _getSheet_();
+  const row = _findRowById_(sh, id);
+  if (!row) throw new Error('No se encontró la sesión con ese id');
+  sh.deleteRow(row);
+}
 
-            if (!res.ok) {
-                throw new Error(`Error de red: ${res.status} ${res.statusText}`);
-            }
+/***** HELPERS *****/
+function _json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function _jsonError(msg) {
+  return _json({ success: false, message: msg });
+}
 
-            const text = await res.text();
-            let result;
-            try {
-                result = JSON.parse(text);
-            } catch (e) {
-                throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
-            }
+function _getSheet_() {
+  let ss;
+  if (SPREADSHEET_ID) {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  } else {
+    // crea uno la primera vez si no hay ID
+    const userProps = PropertiesService.getUserProperties();
+    const storedId = userProps.getProperty('PD_SHEET_ID');
+    if (storedId) {
+      ss = SpreadsheetApp.openById(storedId);
+    } else {
+      ss = SpreadsheetApp.create('Planificador Didáctico - Sessions');
+      userProps.setProperty('PD_SHEET_ID', ss.getId());
+    }
+  }
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    sh.getRange(1,1,1,4).setValues([['id','createdAt','updatedAt','data']]);
+    sh.getRange('A:D').setNumberFormat('@STRING@'); // texto por defecto
+  }
+  return sh;
+}
 
-            if (!result.success) {
-                throw new Error(result.message || 'Error desconocido en el servidor');
-            }
-            return result.data;
-        }
-        // -------------------------------------------
+function _findRowById_(sh, id) {
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) return i + 2; // +2 por encabezado
+  }
+  return null;
+}
 
-        async function loadSessions() {
-            const loadingEl = document.getElementById('loading-sessions');
-            loadingEl.textContent = 'Cargando sesiones...';
-            try {
-                allSessions = await apiCall('getSessions');
-                renderSessionList();
-            } catch (error) {
-                console.error("Error detallado al cargar sesiones:", error);
-                loadingEl.textContent = 'Error al cargar sesiones.';
-                showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`);
-            }
-        }
-
-        function renderSessionList() {
-            const sessionList = document.getElementById('session-list');
-            const loadingEl = document.getElementById('loading-sessions');
-            loadingEl.style.display = 'none';
-            sessionList.innerHTML = '';
-
-            if (allSessions.length === 0) {
-                sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No hay sesiones guardadas.</p>';
-                return;
-            }
-            
-            allSessions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-            allSessions.forEach(session => {
-                const div = document.createElement('div');
-                div.className = `p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors ${currentSessionId === session.id ? 'bg-blue-100 border-blue-500' : 'hover:bg-slate-100 border-transparent'}`;
-                div.dataset.id = session.id;
-                const title = session.situacionAprendizaje?.split('\n')[0] || 'Sin título';
-                const subtitle = `${session.materia?.[0] || 'Sin materia'} - ${session.curso?.[0] || 'Sin curso'}`;
-                div.innerHTML = `<h3 class="font-semibold truncate">${title}</h3><p class="text-sm text-slate-500">${subtitle}</p>`;
-                div.addEventListener('click', () => displaySession(session.id));
-                sessionList.appendChild(div);
-            });
-        }
-
-        function displaySession(sessionId) {
-            const sessionData = allSessions.find(s => s.id === sessionId);
-            if (!sessionData) return;
-
-            document.getElementById('welcome-message').style.display = 'none';
-            document.getElementById('session-form').style.display = 'block';
-            document.getElementById('action-buttons').classList.remove('hidden');
-            document.getElementById('form-step-1').classList.remove('hidden');
-            document.getElementById('form-step-2').classList.remove('hidden');
-            document.getElementById('continue-btn').classList.add('hidden');
-
-            const form = document.getElementById('session-form');
-            form.reset();
-            currentSessionId = sessionData.id;
-            
-            const title = sessionData.situacionAprendizaje?.split('\n')[0] || 'Sesión sin título';
-            document.getElementById('form-title').textContent = `Editando: ${title}`;
-            document.querySelectorAll('#session-list > div').forEach(div => {
-                div.classList.toggle('bg-blue-100', div.dataset.id === currentSessionId);
-                div.classList.toggle('border-blue-500', div.dataset.id === currentSessionId);
-            });
-
-            for (const key in sessionData) {
-                const field = form.elements[key];
-                if (field) {
-                    if (field.multiple) {
-                        const values = Array.isArray(sessionData[key]) ? sessionData[key] : [];
-                        for (const option of field.options) option.selected = values.includes(option.value);
-                    } else {
-                        field.value = sessionData[key] || '';
-                    }
-                } else if (key === 'criteriosEvaluacion' || key === 'dua') {
-                    const savedValues = Array.isArray(sessionData[key]) ? sessionData[key] : [];
-                    const checkboxes = document.querySelectorAll(`input[name="${key}"]`);
-                    checkboxes.forEach(cb => { cb.checked = savedValues.includes(cb.value); });
-                }
-            }
-            
-            document.getElementById('selectedDuaGuidelines').value = JSON.stringify(sessionData.duaGuidelines || []);
-            updateDerivedFields();
-        }
-        
-        function clearForm() {
-            document.getElementById('welcome-message').style.display = 'none';
-            document.getElementById('session-form').style.display = 'block';
-            document.getElementById('action-buttons').classList.add('hidden');
-            document.getElementById('form-step-1').classList.remove('hidden');
-            document.getElementById('form-step-2').classList.add('hidden');
-            document.getElementById('continue-btn').classList.remove('hidden');
-            currentSessionId = null;
-            document.getElementById('session-form').reset();
-            document.getElementById('selectedDuaGuidelines').value = '[]';
-            document.getElementById('form-title').textContent = 'Paso 1: Información General';
-            document.querySelectorAll('#session-list > div').forEach(div => { div.classList.remove('bg-blue-100', 'border-blue-500'); });
-            document.getElementById('situacionAprendizaje').focus();
-        }
-
-        async function saveSession() {
-            const form = document.getElementById('session-form');
-            const sessionData = { id: currentSessionId };
-
-            ['situacionAprendizaje', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'].forEach(id => { if (form.elements[id]) sessionData[id] = form.elements[id].value; });
-            ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales', 'adaptacion'].forEach(id => { if (form.elements[id]) sessionData[id] = Array.from(form.elements[id].selectedOptions).map(opt => opt.value); });
-            sessionData['criteriosEvaluacion'] = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
-            sessionData['dua'] = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb => cb.value);
-            sessionData['duaGuidelines'] = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
-            
-            showModal('Guardando...', '', { showSpinner: true, buttons: [] });
-            try {
-                const result = await apiCall('saveSession', { data: sessionData });
-                if (!currentSessionId) {
-                    currentSessionId = result.id;
-                }
-                showModal('Éxito', '¡Sesión guardada correctamente!');
-                loadSessions();
-            } catch (error) {
-                console.error("Error al guardar la sesión: ", error);
-                showModal('Error', `Hubo un problema al guardar la sesión: ${error.message}`);
-            }
-        }
-        
-        async function deleteSession() {
-            if (!currentSessionId) return;
-            showModal('Confirmar Eliminación', '¿Estás seguro de que quieres eliminar esta sesión?', { buttons: [
-                { text: 'Cancelar', class: 'bg-slate-500 hover:bg-slate-600', callback: hideModal },
-                { text: 'Sí, Eliminar', class: 'bg-red-500 hover:bg-red-600', callback: async () => {
-                    showModal('Eliminando...', '', { showSpinner: true, buttons: [] });
-                    try {
-                        await apiCall('deleteSession', { id: currentSessionId });
-                        clearForm();
-                        document.getElementById('session-form').style.display = 'none';
-                        document.getElementById('welcome-message').style.display = 'block';
-                        showModal('Éxito', 'Sesión eliminada.');
-                        loadSessions();
-                    } catch (error) {
-                        console.error("Error al eliminar la sesión: ", error);
-                        showModal('Error', `No se pudo eliminar la sesión: ${error.message}`);
-                    }
-                }}
-            ]});
-        }
-
-        function duplicateSession() {
-            if (!currentSessionId) {
-                showModal('Aviso', 'Por favor, selecciona una sesión para duplicar.');
-                return;
-            }
-            const sessionData = allSessions.find(s => s.id === currentSessionId);
-            if (!sessionData) return;
-            clearForm();
-            displaySession(sessionData.id);
-            currentSessionId = null;
-            const titleField = document.getElementById('situacionAprendizaje');
-            titleField.value = `[COPIA] ${titleField.value}`;
-            document.getElementById('form-title').textContent = `Duplicando: ${sessionData.situacionAprendizaje.split('\n')[0]}`;
-            document.getElementById('form-step-2').classList.remove('hidden');
-            document.getElementById('continue-btn').classList.add('hidden');
-            document.getElementById('action-buttons').classList.remove('hidden');
-            showModal('Sesión Duplicada', 'Se han copiado los datos. Revisa la información y pulsa "Guardar" para crear la nueva sesión.');
-        }
-
-        function printReport() {
-            if (!currentSessionId) {
-                showModal("Aviso", "Por favor, guarda la sesión antes de imprimir.");
-                return;
-            }
-            const data = allSessions.find(s => s.id === currentSessionId);
-            if (!data) return;
-
-            const printArea = document.getElementById('print-area');
-            const situacion = data.situacionAprendizaje || 'Situación de Aprendizaje no definida';
-            const generateList = (items) => items && items.length > 0 ? `<ul class="list-disc list-inside">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<span class="text-slate-500">No especificado</span>';
-            const generateText = (text) => text ? `<p class="pl-2 mt-1 text-slate-700">${text.replace(/\n/g, '<br>')}</p>` : '<span class="text-slate-500">No especificado</span>';
-            const duaPrinciples = generateList(data.dua);
-            const duaGuidelinesList = data.duaGuidelines && data.duaGuidelines.length > 0 ? `<div><strong class="block mt-2">Pautas Específicas:</strong>${generateList(data.duaGuidelines)}</div>` : '';
-
-            printArea.innerHTML = `
-                <div class="p-8 font-sans space-y-6 bg-white">
-                    <h1 class="text-3xl font-bold border-b pb-2 mb-4">Programación de Sesión</h1>
-                    <div class="p-4 border rounded-lg bg-slate-50"><h2 class="text-2xl font-semibold">${situacion.split('\n')[0]}</h2><p class="mt-2">${situacion.substring(situacion.indexOf('\n') + 1).replace(/\n/g, '<br>')}</p></div>
-                    <div class="grid grid-cols-3 gap-6 text-sm border p-4 rounded-lg">
-                        <div><strong class="block mb-1">Materia(s):</strong> ${generateList(data.materia)}</div>
-                        <div><strong class="block mb-1">Curso(s):</strong> ${generateList(data.curso)}</div>
-                        <div><strong class="block mb-1">Sesión(es):</strong> ${generateList(data.sesionNum)}</div>
-                    </div>
-                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Actividades</h3>${[data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act ? `<div class="mt-2"><strong class="block">Actividad ${i+1}:</strong><p class="pl-2 mt-1 text-slate-700">${act.replace(/\n/g, '<br>')}</p></div>` : '').join('')}</div>
-                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${generateList(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${generateText(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${generateList(data.tiposEvaluacion)}</div><div><strong>Crit
-erios de Calificación:</strong> ${generateList(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${generateText(data.recursos)}</div></div>
-                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Marco Pedagógico</h3><div><strong>Competencia Específica:</strong> ${generateText(data.competenciaEspecifica)}</div><div><strong>Descriptores Operativos:</strong> ${generateText(data.descriptoresOperativos)}</div><div><strong>Competencias Clave:</strong> ${generateText(data.competenciasClave)}</div><div><strong>Contenidos Transversales:</strong> ${generateList(data.contenidosTransversales)}</div></div>
-                    <div class="space-y-4"><h3 class="text-xl font-semibold border-b pb-1">Atención a la Diversidad</h3><div><strong>Principios DUA:</strong> ${duaPrinciples} ${duaGuidelinesList}</div><div><strong>Adaptaciones:</strong> ${generateList(data.adaptacion)}</div></div>
-                </div>`;
-            window.print();
-        }
-
-        // --- EVENT LISTENERS ---
-        document.addEventListener('DOMContentLoaded', () => {
-            buildForm();
-            document.getElementById('session-form').style.display = 'none';
-            if (SCRIPT_URL.includes("Pega aquí")) {
-                showModal("Configuración Requerida", "Debes editar el archivo HTML y pegar la URL de tu script de Google para que la aplicación funcione.");
-                document.getElementById('loading-sessions').textContent = 'Configuración requerida.';
-            } else {
-                loadSessions();
-            }
-            document.getElementById('new-session-btn').addEventListener('click', clearForm);
-            document.getElementById('save-btn').addEventListener('click', saveSession);
-            document.getElementById('delete-btn').addEventListener('click', deleteSession);
-            document.getElementById('print-btn').addEventListener('click', printReport);
-            document.getElementById('duplicate-btn').addEventListener('click', duplicateSession);
-            document.getElementById('continue-btn').addEventListener('click', () => {
-                document.getElementById('form-step-2').classList.remove('hidden');
-                document.getElementById('continue-btn').classList.add('hidden');
-                document.getElementById('action-buttons').classList.remove('hidden');
-                document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión';
-            });
-            document.getElementById('dua-modal-cancel').addEventListener('click', hideDuaModal);
-            document.getElementById('dua-modal-save').addEventListener('click', saveDuaGuidelines);
-        });
-    </script>
-</body>
-</html>
+function _stripId_(obj) {
+  const clone = JSON.parse(JSON.stringify(obj));
+  delete clone.id;
+  delete clone.createdAt;
+  delete clone.updatedAt;
+  return clone;
+}
