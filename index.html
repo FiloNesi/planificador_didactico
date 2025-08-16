@@ -154,7 +154,7 @@
     </div>
   </div>
 
-  <!-- NUEVO: Plantillas HTML -->
+  <!-- Plantillas HTML -->
   <template id="template-session-item">
     <div class="p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors hover:bg-slate-100 border-transparent">
       <h3 class="font-semibold truncate" data-template="title"></h3>
@@ -235,7 +235,7 @@
             adaptaciones: ["Adaptación curricular no significativa","Adaptación curricular significativa","Actividades de ampliación","Actividades de refuerzo"],
             contenidosTransversales: ["Educación para la paz","Educación para la igualdad de género","Educación ambiental","Educación para la salud"]
         },
-        allEditorIds: ['situacionAprendizaje', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones']
+        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones']
     };
 
     // =============================
@@ -465,7 +465,8 @@
             document.getElementById('edit-info-btn')?.addEventListener('click', () => {
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
-                document.getElementById('continue-btn').classList.remove('hidden');
+                document.getElementById('form-step-3').classList.add('hidden');
+                document.getElementById('continue-btn-1').classList.remove('hidden');
                 document.getElementById('action-buttons').classList.add('hidden');
                 document.getElementById('info-summary').classList.add('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
@@ -483,49 +484,65 @@
             form.innerHTML = '';
             const step1 = document.createElement('div'); step1.id = 'form-step-1'; step1.className = 'space-y-6';
             const step2 = document.createElement('div'); step2.id = 'form-step-2'; step2.className = 'hidden space-y-6';
+            const step3 = document.createElement('div'); step3.id = 'form-step-3'; step3.className = 'hidden space-y-6';
+            
             const fieldsets = [
                 { step:1, legend: 'Información General', fields:[
                     { id:'situacionAprendizaje', label:'Situación de Aprendizaje', type:'textarea' }, { id:'fecha', label:'Fecha', type:'date' }, { id:'materia', label:'Materia', type:'select-multiple', options: config.appData.materias }, { id:'curso', label:'Curso', type:'select-multiple', options: config.appData.cursos }, { id:'sesionNum', label:'Nº de la Sesión', type:'select-multiple', options: config.appData.sesiones },
                 ]},
-                { step:2, legend: 'Actividades', fields:[
+                { step:2, legend: 'Detalles de la Sesión', fields:[
+                    { id:'contextoReto', label:'Contexto-reto', type:'textarea' }, { id:'metodologias', label:'Metodologías', type:'textarea' }, { id:'resultadosEsperados', label:'Resultados esperados al final de la sesión', type:'textarea' }, { id:'preparacionPrevia', label:'Preparación previa', type:'textarea' },
+                ]},
+                { step:3, legend: 'Actividades', fields:[
                     { id:'actividad1', label:'Actividad 1', type:'textarea' }, { id:'actividad2', label:'Actividad 2', type:'textarea' }, { id:'actividad3', label:'Actividad 3', type:'textarea' }, { id:'actividad4', label:'Actividad 4', type:'textarea' },
                 ]},
-                { step:2, legend: 'Evaluación', fields:[
+                { step:3, legend: 'Evaluación', fields:[
                     { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'select-multiple', options: config.appData.tiposEvaluacion }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'select-multiple', options: config.appData.criteriosCalificacion }, { id:'recursos', label:'Recursos', type:'textarea' },
                 ]},
-                { step:2, legend: 'Marco Pedagógico (Automático)', fields:[
+                { step:3, legend: 'Marco Pedagógico (Automático)', fields:[
                     { id:'competenciaEspecifica', label:'Competencia Específica', type:'readonly-textarea' }, { id:'descriptoresOperativos', label:'Descriptores Operativos', type:'readonly-textarea' }, { id:'competenciasClave', label:'Competencias Clave', type:'readonly-textarea' }, { id:'contenidosTransversales', label:'Contenidos Transversales', type:'select-multiple', options: config.appData.contenidosTransversales },
                 ]},
-                { step:2, legend: 'Atención a la Diversidad', fields:[
+                { step:3, legend: 'Atención a la Diversidad', fields:[
                     { id:'dua', label:'DUA', type:'dua-group' }, { id:'adaptacion', label:'Adaptación', type:'select-multiple', options: config.appData.adaptaciones },
                 ]},
-                { step:2, legend: 'Observaciones', fields:[
+                { step:3, legend: 'Observaciones', fields:[
                     { id:'observaciones', label:'Observaciones y notas adicionales', type:'textarea' },
                 ]},
             ];
+            
             fieldsets.forEach(fs => {
                 const fsEl = document.createElement('fieldset'); fsEl.className = 'border border-slate-200 p-4 rounded-lg';
                 const legend = document.createElement('legend'); legend.className = 'text-md font-semibold px-2 text-slate-600'; legend.textContent = fs.legend; fsEl.appendChild(legend);
                 const grid = document.createElement('div');
                 grid.className = fs.fields.length > 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4';
-                if (fs.legend === 'Información General') {
-                    grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-                    const saWrapper = ui.createFormField('situacionAprendizaje', 'Situación de Aprendizaje', 'textarea');
-                    saWrapper.classList.add('md:col-span-2');
-                    grid.appendChild(saWrapper);
-                    grid.appendChild(ui.createFormField('fecha', 'Fecha', 'date'));
-                    grid.appendChild(ui.createFormField('materia', 'Materia', 'select-multiple', config.appData.materias));
-                    grid.appendChild(ui.createFormField('curso', 'Curso', 'select-multiple', config.appData.cursos));
-                    grid.appendChild(ui.createFormField('sesionNum', 'Nº de la Sesión', 'select-multiple', config.appData.sesiones));
-                } else {
-                    fs.fields.forEach(f => grid.appendChild(ui.createFormField(f.id, f.label, f.type, f.options)));
-                }
+                
+                fs.fields.forEach(f => {
+                    const fieldWrapper = ui.createFormField(f.id, f.label, f.type, f.options);
+                    if (f.id === 'situacionAprendizaje') {
+                        fieldWrapper.classList.add('md:col-span-2');
+                    }
+                    grid.appendChild(fieldWrapper);
+                });
+
                 fsEl.appendChild(grid);
-                (fs.step === 1 ? step1 : step2).appendChild(fsEl);
+                if(fs.step === 1) step1.appendChild(fsEl);
+                if(fs.step === 2) step2.appendChild(fsEl);
+                if(fs.step === 3) step3.appendChild(fsEl);
             });
-            const continueBtn = document.createElement('button'); continueBtn.type = 'button'; continueBtn.id = 'continue-btn'; continueBtn.textContent = 'Continuar'; continueBtn.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; step1.appendChild(continueBtn);
-            const infoSummary = document.createElement('div'); infoSummary.id = 'info-summary'; infoSummary.className = 'hidden mb-4'; step2.prepend(infoSummary);
-            form.appendChild(step1); form.appendChild(step2);
+
+            const continueBtn1 = document.createElement('button'); continueBtn1.type = 'button'; continueBtn1.id = 'continue-btn-1'; continueBtn1.textContent = 'Continuar'; continueBtn1.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
+            step1.appendChild(continueBtn1);
+
+            const continueBtn2 = document.createElement('button'); continueBtn2.type = 'button'; continueBtn2.id = 'continue-btn-2'; continueBtn2.textContent = 'Continuar a Actividades'; continueBtn2.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
+            step2.appendChild(continueBtn2);
+
+            const infoSummary = document.createElement('div'); infoSummary.id = 'info-summary'; infoSummary.className = 'hidden mb-4'; 
+            step2.prepend(infoSummary.cloneNode(true));
+            step3.prepend(infoSummary.cloneNode(true));
+
+            form.appendChild(step1); 
+            form.appendChild(step2);
+            form.appendChild(step3);
             form.addEventListener('change', (e) => { if (e.target.name === 'criteriosEvaluacion') ui.updateDerivedFields(); app.triggerAutoSave(); });
         },
 
@@ -607,6 +624,7 @@
             
             const createCard = (templateId, title, icon, content) => {
                 const template = document.getElementById(templateId);
+                if (!template) return '';
                 const clone = template.content.cloneNode(true);
                 clone.querySelector('[data-template="title"]').textContent = title;
                 clone.querySelector('[data-template="icon-container"]').innerHTML = icon;
@@ -660,9 +678,9 @@
             document.getElementById('welcome-message').style.display = 'none';
             document.getElementById('session-form').style.display = 'block';
             document.getElementById('action-buttons').classList.remove('hidden');
-            document.getElementById('form-step-1').classList.remove('hidden');
-            document.getElementById('form-step-2').classList.remove('hidden');
-            document.getElementById('continue-btn').classList.add('hidden');
+            document.getElementById('form-step-1').classList.add('hidden');
+            document.getElementById('form-step-2').classList.add('hidden');
+            document.getElementById('form-step-3').classList.remove('hidden');
 
             ui.ensureEditorsInitialized(config.allEditorIds);
             state.currentSessionId = sessionId;
@@ -687,7 +705,6 @@
             }
 
             ui.renderInfoSummary();
-            document.getElementById('form-step-1').classList.add('hidden');
         },
 
         clearForm() {
@@ -696,7 +713,7 @@
             document.getElementById('action-buttons').classList.add('hidden');
             document.getElementById('form-step-1').classList.remove('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
-            document.getElementById('continue-btn').classList.remove('hidden');
+            document.getElementById('form-step-3').classList.add('hidden');
             state.currentSessionId = null;
 
             ui.ensureEditorsInitialized(['situacionAprendizaje']);
@@ -818,7 +835,9 @@
 
             document.getElementById('form-step-1').classList.add('hidden');
             document.getElementById('form-step-2').classList.remove('hidden');
-            document.getElementById('continue-btn').classList.add('hidden');
+            document.getElementById('form-step-3').classList.remove('hidden');
+            document.getElementById('continue-btn-1').classList.add('hidden');
+            document.getElementById('continue-btn-2').classList.add('hidden');
             document.getElementById('action-buttons').classList.remove('hidden');
             ui.renderInfoSummary();
             ui.showModal('Sesión Duplicada', 'Se han copiado los datos. Revisa la información y pulsa "Guardar" para crear la nueva sesión.');
@@ -899,14 +918,21 @@
             document.getElementById('print-btn').addEventListener('click', ui.printReport);
             document.getElementById('duplicate-btn').addEventListener('click', app.duplicateSession);
             
-            document.getElementById('continue-btn').addEventListener('click', () => {
+            document.getElementById('continue-btn-1').addEventListener('click', () => {
                 ui.ensureEditorsInitialized(config.allEditorIds);
                 ui.renderInfoSummary();
                 document.getElementById('form-step-1').classList.add('hidden');
                 document.getElementById('form-step-2').classList.remove('hidden');
-                document.getElementById('continue-btn').classList.add('hidden');
-                document.getElementById('action-buttons').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión';
+            });
+            
+            document.getElementById('continue-btn-2').addEventListener('click', () => {
+                ui.ensureEditorsInitialized(config.allEditorIds);
+                ui.renderInfoSummary();
+                document.getElementById('form-step-2').classList.add('hidden');
+                document.getElementById('form-step-3').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 3: Actividades y Evaluación';
             });
 
             document.getElementById('dua-modal-cancel').addEventListener('click', ui.hideDuaModal);
