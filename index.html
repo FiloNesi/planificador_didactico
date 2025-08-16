@@ -253,10 +253,9 @@
             sesiones: Array.from({length:25},(_,i)=>`Sesión ${i+1}`),
             tiposEvaluacion: ["Diagnóstica","Formativa","Sumativa","Autoevaluación","Coevaluación"],
             criteriosCalificacion: ["Examen escrito (40%)","Trabajo de investigación (30%)","Participación en clase (10%)","Portfolio (20%)"],
-            adaptaciones: ["Adaptación curricular no significativa","Adaptación curricular significativa","Actividades de ampliación","Actividades de refuerzo"],
             contenidosTransversales: ["Educación para la paz","Educación para la igualdad de género","Educación ambiental","Educación para la salud"]
         },
-        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones']
+        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion']
     };
 
     // =============================
@@ -506,6 +505,8 @@
             const step1 = document.createElement('div'); step1.id = 'form-step-1'; step1.className = 'space-y-6';
             const step2 = document.createElement('div'); step2.id = 'form-step-2'; step2.className = 'hidden space-y-6';
             const step3 = document.createElement('div'); step3.id = 'form-step-3'; step3.className = 'hidden space-y-6';
+            const step4 = document.createElement('div'); step4.id = 'form-step-4'; step4.className = 'hidden space-y-6';
+            const step5 = document.createElement('div'); step5.id = 'form-step-5'; step5.className = 'hidden space-y-6';
             
             const fieldsets = [
                 { step:1, legend: 'Información General', fields:[
@@ -517,16 +518,16 @@
                 { step:3, legend: 'Actividades', fields:[
                     { id:'actividad1', label:'Actividad 1', type:'textarea' }, { id:'actividad2', label:'Actividad 2', type:'textarea' }, { id:'actividad3', label:'Actividad 3', type:'textarea' }, { id:'actividad4', label:'Actividad 4', type:'textarea' },
                 ]},
-                { step:3, legend: 'Evaluación', fields:[
+                { step:4, legend: 'Evaluación', fields:[
                     { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'select-multiple', options: config.appData.tiposEvaluacion }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'select-multiple', options: config.appData.criteriosCalificacion }, { id:'recursos', label:'Recursos', type:'textarea' },
                 ]},
-                { step:3, legend: 'Marco Pedagógico (Automático)', fields:[
+                { step:5, legend: 'Marco Pedagógico (Automático)', fields:[
                     { id:'competenciaEspecifica', label:'Competencia Específica', type:'readonly-textarea' }, { id:'descriptoresOperativos', label:'Descriptores Operativos', type:'readonly-textarea' }, { id:'competenciasClave', label:'Competencias Clave', type:'readonly-textarea' }, { id:'contenidosTransversales', label:'Contenidos Transversales', type:'select-multiple', options: config.appData.contenidosTransversales },
                 ]},
-                { step:3, legend: 'Atención a la Diversidad', fields:[
-                    { id:'dua', label:'DUA', type:'dua-group' }, { id:'adaptacion', label:'Adaptación', type:'select-multiple', options: config.appData.adaptaciones },
+                { step:5, legend: 'Atención a la Diversidad', fields:[
+                    { id:'dua', label:'DUA', type:'dua-group' }, { id:'adaptacion', label:'Adaptación', type:'textarea' },
                 ]},
-                { step:3, legend: 'Observaciones', fields:[
+                { step:5, legend: 'Observaciones', fields:[
                     { id:'observaciones', label:'Observaciones y notas adicionales', type:'textarea' },
                 ]},
             ];
@@ -539,7 +540,7 @@
                 
                 fs.fields.forEach(f => {
                     const fieldWrapper = ui.createFormField(f.id, f.label, f.type, f.options);
-                    if (f.id === 'situacionAprendizaje') {
+                    if (f.id === 'situacionAprendizaje' || f.id === 'recursos') {
                         fieldWrapper.classList.add('md:col-span-2');
                     }
                     grid.appendChild(fieldWrapper);
@@ -549,21 +550,50 @@
                 if(fs.step === 1) step1.appendChild(fsEl);
                 if(fs.step === 2) step2.appendChild(fsEl);
                 if(fs.step === 3) step3.appendChild(fsEl);
+                if(fs.step === 4) step4.appendChild(fsEl);
+                if(fs.step === 5) step5.appendChild(fsEl);
             });
 
             const continueBtn1 = document.createElement('button'); continueBtn1.type = 'button'; continueBtn1.id = 'continue-btn-1'; continueBtn1.textContent = 'Continuar'; continueBtn1.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
             step1.appendChild(continueBtn1);
 
-            const continueBtn2 = document.createElement('button'); continueBtn2.type = 'button'; continueBtn2.id = 'continue-btn-2'; continueBtn2.textContent = 'Continuar a Actividades'; continueBtn2.className = 'w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
-            step2.appendChild(continueBtn2);
+            const navStep2 = document.createElement('div'); navStep2.className = 'flex justify-between mt-6';
+            const backBtn2 = document.createElement('button'); backBtn2.type = 'button'; backBtn2.id = 'back-btn-2'; backBtn2.textContent = 'Atrás'; backBtn2.className = 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+            const continueBtn2 = document.createElement('button'); continueBtn2.type = 'button'; continueBtn2.id = 'continue-btn-2'; continueBtn2.textContent = 'Continuar'; continueBtn2.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
+            navStep2.appendChild(backBtn2);
+            navStep2.appendChild(continueBtn2);
+            step2.appendChild(navStep2);
+
+            const navStep3 = document.createElement('div'); navStep3.className = 'flex justify-between mt-6';
+            const backBtn3 = document.createElement('button'); backBtn3.type = 'button'; backBtn3.id = 'back-btn-3'; backBtn3.textContent = 'Atrás'; backBtn3.className = 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+            const continueBtn3 = document.createElement('button'); continueBtn3.type = 'button'; continueBtn3.id = 'continue-btn-3'; continueBtn3.textContent = 'Continuar'; continueBtn3.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
+            navStep3.appendChild(backBtn3);
+            navStep3.appendChild(continueBtn3);
+            step3.appendChild(navStep3);
+            
+            const navStep4 = document.createElement('div'); navStep4.className = 'flex justify-between mt-6';
+            const backBtn4 = document.createElement('button'); backBtn4.type = 'button'; backBtn4.id = 'back-btn-4'; backBtn4.textContent = 'Atrás'; backBtn4.className = 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+            const continueBtn4 = document.createElement('button'); continueBtn4.type = 'button'; continueBtn4.id = 'continue-btn-4'; continueBtn4.textContent = 'Continuar'; continueBtn4.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; 
+            navStep4.appendChild(backBtn4);
+            navStep4.appendChild(continueBtn4);
+            step4.appendChild(navStep4);
+
+            const navStep5 = document.createElement('div'); navStep5.className = 'mt-6';
+            const backBtn5 = document.createElement('button'); backBtn5.type = 'button'; backBtn5.id = 'back-btn-5'; backBtn5.textContent = 'Atrás'; backBtn5.className = 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+            navStep5.appendChild(backBtn5);
+            step5.appendChild(navStep5);
 
             const infoSummary = document.createElement('div'); infoSummary.id = 'info-summary'; infoSummary.className = 'hidden mb-4'; 
             step2.prepend(infoSummary.cloneNode(true));
             step3.prepend(infoSummary.cloneNode(true));
+            step4.prepend(infoSummary.cloneNode(true));
+            step5.prepend(infoSummary.cloneNode(true));
 
             form.appendChild(step1); 
             form.appendChild(step2);
             form.appendChild(step3);
+            form.appendChild(step4);
+            form.appendChild(step5);
             form.addEventListener('change', (e) => { if (e.target.name === 'criteriosEvaluacion') ui.updateDerivedFields(); app.triggerAutoSave(); });
         },
 
@@ -607,7 +637,11 @@
                             const values = Array.isArray(data[key]) ? data[key] : [];
                             for (const opt of field.options) opt.selected = values.includes(opt.value);
                         } else {
-                            field.value = data[key] || '';
+                            if (Array.isArray(data[key])) {
+                                field.value = data[key].join('\n');
+                            } else {
+                                field.value = data[key] || '';
+                            }
                         }
                     } else if (key === 'criteriosEvaluacion' || key === 'dua') {
                         const saved = Array.isArray(data[key]) ? data[key] : [];
@@ -662,7 +696,7 @@
             const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createList(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
             const marcoContent = `<strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createList(data.contenidosTransversales)}`;
             const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
-            const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createList(data.adaptacion)}`;
+            const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createText(data.adaptacion)}`;
             const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? createText(data.observaciones) : `<div class="h-48"></div>`;
             const fecha = data.fecha ? new Date(data.fecha+'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No especificada';
             const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
@@ -701,7 +735,9 @@
             document.getElementById('action-buttons').classList.remove('hidden');
             document.getElementById('form-step-1').classList.add('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
-            document.getElementById('form-step-3').classList.remove('hidden');
+            document.getElementById('form-step-3').classList.add('hidden');
+            document.getElementById('form-step-4').classList.add('hidden');
+            document.getElementById('form-step-5').classList.remove('hidden');
 
             ui.ensureEditorsInitialized(config.allEditorIds);
             state.currentSessionId = sessionId;
@@ -735,6 +771,8 @@
             document.getElementById('form-step-1').classList.remove('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
             document.getElementById('form-step-3').classList.add('hidden');
+            document.getElementById('form-step-4').classList.add('hidden');
+            document.getElementById('form-step-5').classList.add('hidden');
             state.currentSessionId = null;
 
             ui.ensureEditorsInitialized(['situacionAprendizaje']);
@@ -760,7 +798,7 @@
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
             const formFields = ['fecha', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
-            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales', 'adaptacion'];
+            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales'];
 
             config.allEditorIds.forEach(id => {
                 if (state.editors[id] && state.editors[id].core) {
@@ -952,8 +990,49 @@
                 ui.renderInfoSummary();
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 3: Actividades';
+            });
+            
+            document.getElementById('continue-btn-3').addEventListener('click', () => {
+                ui.ensureEditorsInitialized(config.allEditorIds);
+                ui.renderInfoSummary();
+                document.getElementById('form-step-3').classList.add('hidden');
+                document.getElementById('form-step-4').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 4: Evaluación';
+            });
+
+            document.getElementById('continue-btn-4').addEventListener('click', () => {
+                ui.ensureEditorsInitialized(config.allEditorIds);
+                ui.renderInfoSummary();
+                document.getElementById('form-step-4').classList.add('hidden');
+                document.getElementById('form-step-5').classList.remove('hidden');
                 document.getElementById('action-buttons').classList.remove('hidden');
-                document.getElementById('form-title').textContent = 'Paso 3: Actividades y Evaluación';
+                document.getElementById('form-title').textContent = 'Paso 5: Marco Pedagógico y Diversidad';
+            });
+
+            document.getElementById('back-btn-2').addEventListener('click', () => {
+                document.getElementById('form-step-2').classList.add('hidden');
+                document.getElementById('form-step-1').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 1: Información General';
+            });
+
+            document.getElementById('back-btn-3').addEventListener('click', () => {
+                document.getElementById('form-step-3').classList.add('hidden');
+                document.getElementById('form-step-2').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión';
+            });
+            
+            document.getElementById('back-btn-4').addEventListener('click', () => {
+                document.getElementById('form-step-4').classList.add('hidden');
+                document.getElementById('form-step-3').classList.remove('hidden');
+                document.getElementById('form-title').textContent = 'Paso 3: Actividades';
+            });
+
+            document.getElementById('back-btn-5').addEventListener('click', () => {
+                document.getElementById('form-step-5').classList.add('hidden');
+                document.getElementById('form-step-4').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.add('hidden');
+                document.getElementById('form-title').textContent = 'Paso 4: Evaluación';
             });
 
             document.getElementById('dua-modal-cancel').addEventListener('click', ui.hideDuaModal);
