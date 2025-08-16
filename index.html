@@ -128,6 +128,17 @@
                     <label for="search-titulo" class="block text-sm font-medium text-slate-700 mb-1">Título</label>
                     <input type="text" id="search-titulo" name="situacionAprendizaje" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contiene el texto...">
                 </div>
+                <!-- NUEVO: Campos de rango de fechas -->
+                <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="search-fecha-desde" class="block text-sm font-medium text-slate-700 mb-1">Fecha Desde</label>
+                        <input type="date" id="search-fecha-desde" name="fechaDesde" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="search-fecha-hasta" class="block text-sm font-medium text-slate-700 mb-1">Fecha Hasta</label>
+                        <input type="date" id="search-fecha-hasta" name="fechaHasta" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t">
                 <button id="search-clear-btn" type="button" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Limpiar</button>
@@ -274,7 +285,9 @@
             materia: Array.from(form.elements['materia'].selectedOptions).map(o => o.value),
             curso: Array.from(form.elements['curso'].selectedOptions).map(o => o.value),
             sesionNum: Array.from(form.elements['sesionNum'].selectedOptions).map(o => o.value),
-            situacionAprendizaje: form.elements['situacionAprendizaje'].value.toLowerCase()
+            situacionAprendizaje: form.elements['situacionAprendizaje'].value.toLowerCase(),
+            fechaDesde: form.elements['fechaDesde'].value, // NUEVO
+            fechaHasta: form.elements['fechaHasta'].value  // NUEVO
         };
 
         const filteredSessions = allSessions.filter(session => {
@@ -282,7 +295,21 @@
             const materiaMatch = filters.materia.length === 0 || (session.materia || []).some(m => filters.materia.includes(m));
             const cursoMatch = filters.curso.length === 0 || (session.curso || []).some(c => filters.curso.includes(c));
             const sesionMatch = filters.sesionNum.length === 0 || (session.sesionNum || []).some(s => filters.sesionNum.includes(s));
-            return titleMatch && materiaMatch && cursoMatch && sesionMatch;
+            
+            // NUEVO: Lógica de filtrado por fecha
+            const sessionDate = session.fecha;
+            let dateMatch = true;
+            if (filters.fechaDesde && sessionDate) {
+                dateMatch = dateMatch && (sessionDate >= filters.fechaDesde);
+            }
+            if (filters.fechaHasta && sessionDate) {
+                dateMatch = dateMatch && (sessionDate <= filters.fechaHasta);
+            }
+            if ((filters.fechaDesde || filters.fechaHasta) && !sessionDate) {
+                dateMatch = false; // Si se filtra por fecha, las sesiones sin fecha no aparecen
+            }
+
+            return titleMatch && materiaMatch && cursoMatch && sesionMatch && dateMatch;
         });
 
         renderSessionList(filteredSessions);
