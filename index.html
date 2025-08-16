@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- NUEVO: Estilos para el editor de texto -->
+  <link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 8px; }
@@ -28,7 +30,7 @@
         left: 0;
         top: 0;
         width: 100%;
-        -webkit-print-color-adjust: exact; /* Para que se impriman los colores de fondo */
+        -webkit-print-color-adjust: exact;
         color-adjust: exact;
       }
       .no-print { display: none; }
@@ -40,6 +42,8 @@
     .prose blockquote { border-left-color: #e2e8f0; }
     .prose thead { border-bottom-color: #e2e8f0; }
     .prose-sm { font-size: 0.875rem; line-height: 1.5; }
+    .prose ul { list-style-type: disc; }
+    .prose ol { list-style-type: decimal; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -151,6 +155,8 @@
     </div>
   </div>
 
+  <!-- NUEVO: Script para el editor de texto -->
+  <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
 
   <script type="module">
     // =============================
@@ -207,6 +213,8 @@
     let currentDuaPrincipleKey = null;
     let allSessions = [];
     let autoSaveTimer = null;
+    let editors = {};
+    const allEditorIds = ['situacionAprendizaje', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones'];
 
     // =============================
     // Modales
@@ -325,8 +333,22 @@
 
 
     // =============================
-    // Form helpers
+    // Form helpers & Editor
     // =============================
+    function triggerAutoSave() {
+        const statusEl = document.getElementById('autosave-status');
+        statusEl.textContent = 'Guardando...';
+        statusEl.classList.remove('opacity-0');
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => {
+            const data = getFormData();
+            const key = `autosave_${currentSessionId || 'new'}`;
+            localStorage.setItem(key, JSON.stringify(data));
+            statusEl.textContent = 'Guardado ✓';
+            setTimeout(() => statusEl.classList.add('opacity-0'), 2000);
+        }, 1500);
+    }
+
     function createFormField(id, label, type, options = []){
       const wrapper = document.createElement('div');
       const labelEl = document.createElement('label');
@@ -337,19 +359,23 @@
 
       let field;
       if (type === 'textarea'){
-        field = document.createElement('textarea'); field.rows = 3;
-        field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
+        field = document.createElement('textarea');
+        field.className = 'hidden'; // Ocultamos el textarea original
+        wrapper.appendChild(field);
       } else if (type === 'date') {
         field = document.createElement('input');
         field.type = 'date';
         field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
+        wrapper.appendChild(field);
       } else if (type === 'readonly-textarea'){
         field = document.createElement('textarea'); field.rows = 3; field.readOnly = true;
         field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm bg-slate-100 focus:ring-0 focus:border-slate-300 cursor-not-allowed';
+        wrapper.appendChild(field);
       } else if (type === 'select-multiple'){
         field = document.createElement('select'); field.multiple = true;
         field.className = 'w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
         options.forEach(opt => { const o=document.createElement('option'); o.value=opt; o.textContent=opt; field.appendChild(o); });
+        wrapper.appendChild(field);
       } else if (type === 'checkbox-group'){
         field = document.createElement('div'); field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm overflow-y-auto checkbox-group';
         options.forEach(opt => {
@@ -358,6 +384,7 @@
           const lab = document.createElement('label'); lab.htmlFor=cb.id; lab.textContent=opt.text; lab.className='ml-3 text-sm text-slate-600';
           row.appendChild(cb); row.appendChild(lab); field.appendChild(row);
         });
+        wrapper.appendChild(field);
       } else if (type === 'dua-group'){
         field = document.createElement('div'); field.className='w-full p-2 border border-slate-300 rounded-md shadow-sm space-y-3';
         const hidden = document.createElement('input'); hidden.type='hidden'; hidden.id='selectedDuaGuidelines'; field.appendChild(hidden);
@@ -373,10 +400,46 @@
           }
           field.appendChild(item);
         });
+        wrapper.appendChild(field);
       }
-      field.id = id; if (type !== 'checkbox-group' && type !== 'dua-group') field.name = id;
-      wrapper.appendChild(field);
+      
+      if (field) {
+        field.id = id; 
+        if (type !== 'checkbox-group' && type !== 'dua-group') {
+            field.name = id;
+        }
+      }
+      
       return wrapper;
+    }
+
+    function ensureEditorsInitialized(ids) {
+        ids.forEach(id => {
+            const textarea = document.getElementById(id);
+            if (textarea && !editors[id]) {
+                editors[id] = SUNEDITOR.create(id, {
+                    buttonList: [
+                        ['undo', 'redo'],
+                        ['bold', 'italic', 'underline'],
+                        ['list']
+                    ],
+                    height: 'auto',
+                    minHeight: '100px',
+                    callbacks: {
+                        onChange: triggerAutoSave
+                    }
+                });
+            }
+        });
+    }
+
+    function destroyEditors() {
+        Object.values(editors).forEach(editor => {
+            if (editor && typeof editor.destroy === 'function') {
+                editor.destroy();
+            }
+        });
+        editors = {};
     }
 
     function updateDerivedFields(){
@@ -393,13 +456,14 @@
     // =============================
     function chipsHtml(arr){ const a = Array.isArray(arr)?arr:[]; return a.length? a.map(v=>`<span class="inline-block text-xs bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 mr-1 mb-1">${String(v)}</span>`).join('') : '<span class="text-slate-400 text-sm">Sin seleccionar</span>'; }
     function renderInfoSummary(){
-      const form = document.getElementById('session-form');
-      const titleFull = (form.elements['situacionAprendizaje']?.value || '').trim();
-      const title = titleFull.split('\n')[0] || 'Sesión sin título';
-      const materia = Array.from(form.elements['materia']?.selectedOptions || []).map(o=>o.value);
-      const curso = Array.from(form.elements['curso']?.selectedOptions || []).map(o=>o.value);
-      const sesionNum = Array.from(form.elements['sesionNum']?.selectedOptions || []).map(o=>o.value);
-      const fecha = form.elements['fecha']?.value;
+      const data = getFormData();
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = data.situacionAprendizaje || '';
+      const title = tempDiv.textContent.split('\n')[0] || 'Sesión sin título';
+      const materia = data.materia || [];
+      const curso = data.curso || [];
+      const sesionNum = data.sesionNum || [];
+      const fecha = data.fecha;
       const formattedDate = fecha ? new Date(fecha+'T00:00:00').toLocaleDateString('es-ES') : '<span class="text-slate-400">Sin fecha</span>';
 
       const summary = document.getElementById('info-summary') || (()=>{ const d=document.createElement('div'); d.id='info-summary'; d.className='hidden mb-4'; document.getElementById('form-step-2')?.prepend(d); return d; })();
@@ -432,6 +496,7 @@
     // Construcción del formulario
     // =============================
     function buildForm(){
+      destroyEditors();
       const form = document.getElementById('session-form');
       form.innerHTML = '';
       const step1 = document.createElement('div'); step1.id='form-step-1'; step1.className='space-y-6';
@@ -494,7 +559,7 @@
       const continueBtn = document.createElement('button'); continueBtn.type='button'; continueBtn.id='continue-btn'; continueBtn.textContent='Continuar'; continueBtn.className='w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors'; step1.appendChild(continueBtn);
       const infoSummary = document.createElement('div'); infoSummary.id='info-summary'; infoSummary.className='hidden mb-4'; step2.prepend(infoSummary);
       form.appendChild(step1); form.appendChild(step2);
-      form.addEventListener('change', (e)=>{ if (e.target.name==='criteriosEvaluacion') updateDerivedFields(); });
+      form.addEventListener('change', (e)=>{ if (e.target.name==='criteriosEvaluacion') updateDerivedFields(); triggerAutoSave(); });
     }
 
     // =============================
@@ -541,7 +606,9 @@
         const div = document.createElement('div');
         div.className = `p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors ${currentSessionId === session.id ? 'bg-blue-100 border-blue-500' : 'hover:bg-slate-100 border-transparent'}`;
         div.dataset.id = session.id;
-        const title = session.situacionAprendizaje?.split('\n')[0] || 'Sin título';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = session.situacionAprendizaje || '';
+        const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
         const subtitle = `${session.materia?.[0] || 'Sin materia'} - ${session.curso?.[0] || 'Sin curso'}`;
         div.innerHTML = `<h3 class=\"font-semibold truncate\">${title}</h3><p class=\"text-sm text-slate-500\">${subtitle}</p>`;
         div.addEventListener('click', ()=>displaySession(session.id)); sessionList.appendChild(div);
@@ -553,7 +620,9 @@
         form.reset();
         for (const key in data){
             const field = form.elements[key];
-            if (field){
+            if (editors[key]) {
+                editors[key].setContents(data[key] || '');
+            } else if (field){
                 if (field.multiple){ 
                     const values = Array.isArray(data[key]) ? data[key] : [];
                     for (const opt of field.options) opt.selected = values.includes(opt.value);
@@ -574,8 +643,20 @@
     function getFormData() {
         const form = document.getElementById('session-form');
         const data = { id: currentSessionId };
-        ['situacionAprendizaje','fecha','actividad1','actividad2','actividad3','actividad4','instrumentosEvaluacion','recursos','competenciaEspecifica','descriptoresOperativos','competenciasClave', 'observaciones'].forEach(id=>{ if (form.elements[id]) data[id] = form.elements[id].value; });
-        ['materia','curso','sesionNum','tiposEvaluacion','criteriosCalificacion','contenidosTransversales','adaptacion'].forEach(id=>{ if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o=>o.value); });
+        const formFields = ['fecha','competenciaEspecifica','descriptoresOperativos','competenciasClave'];
+        const multiSelectFields = ['materia','curso','sesionNum','tiposEvaluacion','criteriosCalificacion','contenidosTransversales','adaptacion'];
+        
+        allEditorIds.forEach(id => {
+            if (editors[id] && editors[id].core) {
+                data[id] = editors[id].getContents(true);
+            } else if(form.elements[id]) {
+                data[id] = form.elements[id].value;
+            }
+        });
+        
+        formFields.forEach(id => { if (form.elements[id]) data[id] = form.elements[id].value; });
+        multiSelectFields.forEach(id => { if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o=>o.value); });
+        
         data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb=>cb.value);
         data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb=>cb.value);
         data.duaGuidelines = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
@@ -592,8 +673,12 @@
       document.getElementById('form-step-2').classList.remove('hidden');
       document.getElementById('continue-btn').classList.add('hidden');
       
+      ensureEditorsInitialized(allEditorIds);
+
       currentSessionId = sessionId;
-      const title = sessionData.situacionAprendizaje?.split('\n')[0] || 'Sesión sin título';
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = sessionData.situacionAprendizaje || '';
+      const title = tempDiv.textContent.split('\n')[0] || 'Sesión sin título';
       document.getElementById('form-title').textContent = `Editando: ${title}`;
       document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id===currentSessionId); div.classList.toggle('border-blue-500', div.dataset.id===currentSessionId); });
 
@@ -602,8 +687,8 @@
         const autoSavedData = JSON.parse(autoSavedDataRaw);
         showModal('Restaurar Sesión', 'Se han encontrado datos autoguardados para esta sesión. ¿Quieres restaurarlos?', {
             buttons: [
-                { text: 'No, usar versión guardada', class: 'bg-slate-500', callback: () => populateForm(sessionData) },
-                { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => populateForm(autoSavedData) }
+                { text: 'No, usar versión guardada', class: 'bg-slate-500', callback: () => { populateForm(sessionData); renderInfoSummary(); } },
+                { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => { populateForm(autoSavedData); renderInfoSummary(); } }
             ]
         });
       } else {
@@ -625,22 +710,24 @@
       document.getElementById('form-step-2').classList.add('hidden');
       document.getElementById('continue-btn').classList.remove('hidden');
       currentSessionId = null;
-      const form = document.getElementById('session-form'); form.reset();
-      const hiddenDUA = document.getElementById('selectedDuaGuidelines'); if (hiddenDUA) hiddenDUA.value = '[]';
+      
+      ensureEditorsInitialized(['situacionAprendizaje']);
+
       document.getElementById('form-title').textContent = 'Paso 1: Información General';
       document.querySelectorAll('#session-list > div').forEach(div => div.classList.remove('bg-blue-100','border-blue-500'));
       const summary = document.getElementById('info-summary'); if (summary){ summary.classList.add('hidden'); summary.innerHTML=''; }
-      document.getElementById('situacionAprendizaje')?.focus();
-
+      
       const autoSavedDataRaw = localStorage.getItem('autosave_new');
       if (autoSavedDataRaw) {
           const autoSavedData = JSON.parse(autoSavedDataRaw);
           showModal('Restaurar Borrador', 'Se ha encontrado un borrador no guardado. ¿Quieres restaurarlo?', {
               buttons: [
-                  { text: 'No, empezar de cero', class: 'bg-slate-500', callback: () => localStorage.removeItem('autosave_new') },
+                  { text: 'No, empezar de cero', class: 'bg-slate-500', callback: () => { localStorage.removeItem('autosave_new'); populateForm({}); } },
                   { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => populateForm(autoSavedData) }
               ]
           });
+      } else {
+          populateForm({});
       }
     }
 
@@ -650,16 +737,26 @@
       try { 
         const r = await apiCall('saveSession', { data }); 
         const savedId = r.id;
-        if (!currentSessionId) currentSessionId = savedId;
         
-        localStorage.removeItem(`autosave_${savedId}`);
-        if (data.id === null) localStorage.removeItem('autosave_new');
+        localStorage.removeItem(`autosave_${currentSessionId || 'new'}`);
+        if(currentSessionId === null) localStorage.removeItem('autosave_new');
+        
+        currentSessionId = savedId;
+        
         document.getElementById('autosave-status').textContent = '';
         document.getElementById('autosave-status').classList.add('opacity-0');
 
         showModal('Éxito','¡Sesión guardada correctamente!'); 
         await loadSessions();
-        displaySession(savedId);
+        
+        const sessionData = allSessions.find(s=>s.id===savedId);
+        if(sessionData) {
+            document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id===savedId); div.classList.toggle('border-blue-500', div.dataset.id===savedId); });
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = sessionData.situacionAprendizaje || '';
+            const title = tempDiv.textContent.split('\n')[0] || 'Sesión sin título';
+            document.getElementById('form-title').textContent = `Editando: ${title}`;
+        }
       }
       catch (error){ console.error('Error al guardar', error); showModal('Error', `Hubo un problema al guardar la sesión: ${error.message}`); }
     }
@@ -686,15 +783,21 @@
     function duplicateSession(){
       if (!currentSessionId){ showModal('Aviso','Por favor, selecciona una sesión para duplicar.'); return; }
       const s = allSessions.find(x=>x.id===currentSessionId); if (!s) return; 
-      clearForm(); 
+      
+      ensureEditorsInitialized(allEditorIds);
+      
       populateForm(s);
       currentSessionId = null;
-      const titleField = document.getElementById('situacionAprendizaje'); 
-      titleField.value = `[COPIA] ${titleField.value}`;
+      
+      const titleContent = editors['situacionAprendizaje'].getContents(true);
+      editors['situacionAprendizaje'].setContents(`[COPIA] ${titleContent}`);
+
       document.getElementById('form-title').textContent = `Duplicando: ${s.situacionAprendizaje.split('\n')[0]}`;
+      document.getElementById('form-step-1').classList.add('hidden');
       document.getElementById('form-step-2').classList.remove('hidden'); 
       document.getElementById('continue-btn').classList.add('hidden'); 
       document.getElementById('action-buttons').classList.remove('hidden');
+      renderInfoSummary();
       showModal('Sesión Duplicada','Se han copiado los datos. Revisa la información y pulsa "Guardar" para crear la nueva sesión.');
     }
 
@@ -710,7 +813,6 @@
         if (!data) return;
 
         const printArea = document.getElementById('print-area');
-
         const createIcon = (path) => `<svg class="w-6 h-6 mr-3 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
         const icons = {
             situacion: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
@@ -722,19 +824,25 @@
             observaciones: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>')
         };
         const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
-        const createText = (content) => !content || content.trim() === '' ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<div class="prose prose-sm max-w-none mt-2">${content.replace(/\n/g, '<br>')}</div>`;
+        const createText = (content) => !content || content.trim() === '' || content.trim() === '<p><br></p>' ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<div class="prose prose-sm max-w-none mt-2">${content}</div>`;
         const createCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-6"><div class="flex items-center">${icon}<h3 class="text-xl font-bold text-slate-800">${title}</h3></div><div class="mt-4 text-slate-600 pl-9">${content}</div></div></div>`;
         const createSidebarCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-5"><div class="flex items-center border-b border-slate-200 pb-3 mb-3">${icon}<h4 class="text-md font-bold text-slate-700">${title}</h4></div><div class="text-sm text-slate-600">${content}</div></div></div>`;
-        const situacion = data.situacionAprendizaje || '', situacionTitle = situacion.split('\n')[0] || 'Situación de Aprendizaje sin Título', situacionBody = situacion.substring(situacion.indexOf('\n') + 1);
-        const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.situacionAprendizaje || '';
+        const situacionTitle = tempDiv.textContent.split('\n')[0] || 'Situación de Aprendizaje sin Título';
+        const situacionBody = data.situacionAprendizaje || '';
+
+        const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act && act.trim() !== '<p><br></p>' ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
         const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createList(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
         const marcoContent = `<strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createList(data.contenidosTransversales)}`;
         const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
         const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createList(data.adaptacion)}`;
-        const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? `<div class="prose prose-sm max-w-none mt-2">${data.observaciones.replace(/\n/g, '<br>')}</div>` : `<div class="h-48"></div>`;
+        const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? createText(data.observaciones) : `<div class="h-48"></div>`;
         const fecha = data.fecha ? new Date(data.fecha+'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No especificada';
         const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
-        printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><main class="lg:col-span-2">${createCard('Situación de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody.replace(/\n/g, '<br>')}</div>`)}${createCard('Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}</main><aside>${createSidebarCard('Información General', icons.info, infoGeneralContent)}${createSidebarCard('Marco Pedagógico', icons.marco, marcoContent)}</aside></div><div class="mt-2">${createCard('Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
+        
+        printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><main class="lg:col-span-2">${createCard('Situación de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}${createCard('Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}</main><aside>${createSidebarCard('Información General', icons.info, infoGeneralContent)}${createSidebarCard('Marco Pedagógico', icons.marco, marcoContent)}</aside></div><div class="mt-2">${createCard('Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
         window.print();
     }
 
@@ -754,7 +862,17 @@
       document.getElementById('delete-btn').addEventListener('click', deleteSession);
       document.getElementById('print-btn').addEventListener('click', printReport);
       document.getElementById('duplicate-btn').addEventListener('click', duplicateSession);
-      document.getElementById('continue-btn').addEventListener('click', ()=>{ renderInfoSummary(); document.getElementById('form-step-1').classList.add('hidden'); document.getElementById('form-step-2').classList.remove('hidden'); document.getElementById('continue-btn').classList.add('hidden'); document.getElementById('action-buttons').classList.remove('hidden'); document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión'; });
+      
+      document.getElementById('continue-btn').addEventListener('click', ()=>{
+        ensureEditorsInitialized(allEditorIds);
+        renderInfoSummary(); 
+        document.getElementById('form-step-1').classList.add('hidden');
+        document.getElementById('form-step-2').classList.remove('hidden');
+        document.getElementById('continue-btn').classList.add('hidden');
+        document.getElementById('action-buttons').classList.remove('hidden');
+        document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión'; 
+      });
+
       document.getElementById('dua-modal-cancel').addEventListener('click', hideDuaModal);
       document.getElementById('dua-modal-save').addEventListener('click', saveDuaGuidelines);
       
@@ -763,19 +881,6 @@
       document.getElementById('search-form').addEventListener('submit', handleSearch);
       document.getElementById('search-clear-btn').addEventListener('click', clearSearch);
 
-      form.addEventListener('input', () => {
-          const statusEl = document.getElementById('autosave-status');
-          statusEl.textContent = 'Guardando...';
-          statusEl.classList.remove('opacity-0');
-          clearTimeout(autoSaveTimer);
-          autoSaveTimer = setTimeout(() => {
-              const data = getFormData();
-              const key = `autosave_${currentSessionId || 'new'}`;
-              localStorage.setItem(key, JSON.stringify(data));
-              statusEl.textContent = 'Guardado ✓';
-              setTimeout(() => statusEl.classList.add('opacity-0'), 2000);
-          }, 1500);
-      });
     });
   </script>
 </body>
