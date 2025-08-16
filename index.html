@@ -112,6 +112,31 @@
     </div>
   </div>
   
+  <!-- Modal Unidad Didáctica -->
+  <div id="ud-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-1/2 mx-auto">
+      <h3 class="text-xl font-bold text-slate-800 mb-4">Seleccionar Unidad Didáctica</h3>
+      <div id="ud-modal-content" class="grid grid-cols-3 sm:grid-cols-5 gap-4 py-4">
+        <!-- Numbers will be populated here -->
+      </div>
+      <div class="text-right">
+        <button id="ud-modal-cancel" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Selector Múltiple -->
+  <div id="multi-select-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-1/2 mx-auto">
+      <h3 id="multi-select-modal-title" class="text-xl font-bold text-slate-800 mb-4"></h3>
+      <div id="multi-select-modal-content" class="grid grid-cols-2 sm:grid-cols-3 gap-4 py-4 max-h-96 overflow-y-auto"></div>
+      <div class="text-right space-x-2">
+        <button id="multi-select-modal-cancel" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+        <button id="multi-select-modal-save" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Búsqueda -->
   <div id="search-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
     <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 mx-auto">
@@ -250,12 +275,12 @@
         appData: {
             materias: ["Filosofía","Hª de la Filosofía","Valores Éticos","Psicología"],
             cursos: ["1º ESO","2º ESO","3º ESO","4º ESO","1º Bachillerato","2º Bachillerato"],
-            sesiones: Array.from({length:25},(_,i)=>`Sesión ${i+1}`),
+            sesiones: Array.from({length:15},(_,i)=>`Sesión ${i+1}`),
             tiposEvaluacion: ["Diagnóstica","Formativa","Sumativa","Autoevaluación","Coevaluación"],
             criteriosCalificacion: ["Examen escrito (40%)","Trabajo de investigación (30%)","Participación en clase (10%)","Portfolio (20%)"],
             contenidosTransversales: ["Educación para la paz","Educación para la igualdad de género","Educación ambiental","Educación para la salud"]
         },
-        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion']
+        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'contenidos', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion']
     };
 
     // =============================
@@ -266,7 +291,8 @@
         currentDuaPrincipleKey: null,
         allSessions: [],
         autoSaveTimer: null,
-        editors: {}
+        editors: {},
+        currentMultiSelect: null
     };
 
     // =============================
@@ -338,6 +364,97 @@
             document.getElementById('dua-modal').classList.add('hidden');
         },
 
+        showUdModal() {
+            const content = document.getElementById('ud-modal-content');
+            content.innerHTML = '';
+            const currentValue = document.getElementById('unidadDidactica').value;
+
+            for (let i = 1; i <= 15; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.dataset.value = i;
+                button.className = `p-4 rounded-lg text-center font-bold transition-colors ${i == currentValue ? 'bg-blue-500 text-white' : 'bg-slate-100 hover:bg-slate-200'}`;
+                button.addEventListener('click', () => {
+                    document.getElementById('unidadDidactica').value = i;
+                    document.getElementById('ud-display').textContent = `Unidad ${i}`;
+                    app.triggerAutoSave();
+                    ui.hideUdModal();
+                });
+                content.appendChild(button);
+            }
+            document.getElementById('ud-modal').classList.remove('hidden');
+        },
+
+        hideUdModal() {
+            document.getElementById('ud-modal').classList.add('hidden');
+        },
+        
+        showMultiSelectModal(type) {
+            state.currentMultiSelect = type;
+            const modal = document.getElementById('multi-select-modal');
+            const titleEl = document.getElementById('multi-select-modal-title');
+            const contentEl = document.getElementById('multi-select-modal-content');
+            contentEl.innerHTML = '';
+
+            let title = '';
+            let options = [];
+            
+            if (type === 'materia') {
+                title = 'Seleccionar Materia(s)';
+                options = config.appData.materias;
+            } else if (type === 'curso') {
+                title = 'Seleccionar Curso(s)';
+                options = config.appData.cursos;
+            } else if (type === 'sesionNum') {
+                title = 'Seleccionar Sesión(es)';
+                options = config.appData.sesiones;
+            }
+
+            titleEl.textContent = title;
+            const currentValues = JSON.parse(document.getElementById(type).value || '[]');
+
+            options.forEach(opt => {
+                const wrapper = document.createElement('div');
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.id = `ms-${type}-${opt}`;
+                cb.value = opt;
+                cb.checked = currentValues.includes(opt);
+                cb.className = 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500';
+                const label = document.createElement('label');
+                label.htmlFor = cb.id;
+                label.textContent = opt;
+                label.className = 'ml-2 text-sm text-slate-600';
+                wrapper.appendChild(cb);
+                wrapper.appendChild(label);
+                contentEl.appendChild(wrapper);
+            });
+
+            modal.classList.remove('hidden');
+        },
+
+        hideMultiSelectModal() {
+            state.currentMultiSelect = null;
+            document.getElementById('multi-select-modal').classList.add('hidden');
+        },
+        
+        updateChipsDisplay(fieldId, values) {
+            const displayEl = document.getElementById(`${fieldId}-display`);
+            if (!displayEl) return;
+            
+            displayEl.innerHTML = '';
+            if (values && values.length > 0) {
+                values.forEach(value => {
+                    const chip = document.createElement('span');
+                    chip.className = 'inline-block text-xs bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 mr-1 mb-1';
+                    chip.textContent = value;
+                    displayEl.appendChild(chip);
+                });
+            } else {
+                displayEl.innerHTML = '<span class="text-slate-400">No seleccionado</span>';
+            }
+        },
+
         showSearchModal() {
             const populateSelect = (selectId, data) => {
                 const select = document.getElementById(selectId);
@@ -380,11 +497,6 @@
             } else if (type === 'readonly-textarea') {
                 field = document.createElement('textarea'); field.rows = 3; field.readOnly = true;
                 field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm bg-slate-100 focus:ring-0 focus:border-slate-300 cursor-not-allowed';
-                wrapper.appendChild(field);
-            } else if (type === 'select-multiple') {
-                field = document.createElement('select'); field.multiple = true;
-                field.className = 'w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
-                options.forEach(opt => { const o = document.createElement('option'); o.value = opt; o.textContent = opt; field.appendChild(o); });
                 wrapper.appendChild(field);
             } else if (type === 'checkbox-group') {
                 field = document.createElement('div'); field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm overflow-y-auto checkbox-group';
@@ -510,19 +622,19 @@
             
             const fieldsets = [
                 { step:1, legend: 'Información General', fields:[
-                    { id:'situacionAprendizaje', label:'Situación de Aprendizaje', type:'textarea' }, { id:'fecha', label:'Fecha', type:'date' }, { id:'materia', label:'Materia', type:'select-multiple', options: config.appData.materias }, { id:'curso', label:'Curso', type:'select-multiple', options: config.appData.cursos }, { id:'sesionNum', label:'Nº de la Sesión', type:'select-multiple', options: config.appData.sesiones },
+                    { id:'situacionAprendizaje', label:'Sesión de Aprendizaje', type:'textarea' }, { id:'unidadDidactica', label:'Unidad Didáctica', type:'ud-selector' }, { id:'fecha', label:'Fecha', type:'date' }, { id:'materia', label:'Materia', type:'modal-multiselect' }, { id:'curso', label:'Curso', type:'modal-multiselect' }, { id:'sesionNum', label:'Nº de la Sesión', type:'modal-multiselect' },
                 ]},
                 { step:2, legend: 'Detalles de la Sesión', fields:[
-                    { id:'contextoReto', label:'Contexto-reto', type:'textarea' }, { id:'metodologias', label:'Metodologías', type:'textarea' }, { id:'resultadosEsperados', label:'Resultados esperados al final de la sesión', type:'textarea' }, { id:'preparacionPrevia', label:'Preparación previa', type:'textarea' },
+                    { id:'contextoReto', label:'Contexto-reto', type:'textarea' }, { id:'contenidos', label:'Contenidos', type:'textarea' }, { id:'metodologias', label:'Metodologías', type:'textarea' }, { id:'resultadosEsperados', label:'Resultados esperados al final de la sesión', type:'textarea' }, { id:'preparacionPrevia', label:'Preparación previa', type:'textarea' },
                 ]},
                 { step:3, legend: 'Actividades', fields:[
                     { id:'actividad1', label:'Actividad 1', type:'textarea' }, { id:'actividad2', label:'Actividad 2', type:'textarea' }, { id:'actividad3', label:'Actividad 3', type:'textarea' }, { id:'actividad4', label:'Actividad 4', type:'textarea' },
                 ]},
                 { step:4, legend: 'Evaluación', fields:[
-                    { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'select-multiple', options: config.appData.tiposEvaluacion }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'select-multiple', options: config.appData.criteriosCalificacion }, { id:'recursos', label:'Recursos', type:'textarea' },
+                    { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'modal-multiselect' }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'modal-multiselect' }, { id:'recursos', label:'Recursos', type:'textarea' },
                 ]},
                 { step:5, legend: 'Marco Pedagógico (Automático)', fields:[
-                    { id:'competenciaEspecifica', label:'Competencia Específica', type:'readonly-textarea' }, { id:'descriptoresOperativos', label:'Descriptores Operativos', type:'readonly-textarea' }, { id:'competenciasClave', label:'Competencias Clave', type:'readonly-textarea' }, { id:'contenidosTransversales', label:'Contenidos Transversales', type:'select-multiple', options: config.appData.contenidosTransversales },
+                    { id:'competenciaEspecifica', label:'Competencia Específica', type:'readonly-textarea' }, { id:'descriptoresOperativos', label:'Descriptores Operativos', type:'readonly-textarea' }, { id:'competenciasClave', label:'Competencias Clave', type:'readonly-textarea' }, { id:'contenidosTransversales', label:'Contenidos Transversales', type:'modal-multiselect' },
                 ]},
                 { step:5, legend: 'Atención a la Diversidad', fields:[
                     { id:'dua', label:'DUA', type:'dua-group' }, { id:'adaptacion', label:'Adaptación', type:'textarea' },
@@ -539,8 +651,34 @@
                 grid.className = fs.fields.length > 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4';
                 
                 fs.fields.forEach(f => {
-                    const fieldWrapper = ui.createFormField(f.id, f.label, f.type, f.options);
-                    if (f.id === 'situacionAprendizaje' || f.id === 'recursos') {
+                    let fieldWrapper;
+                    if (f.type === 'ud-selector') {
+                        fieldWrapper = document.createElement('div');
+                        fieldWrapper.innerHTML = `
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${f.label}</label>
+                            <div class="flex items-center gap-4">
+                                <span id="ud-display" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50 h-10 flex items-center">No seleccionada</span>
+                                <input type="hidden" id="${f.id}" name="${f.id}">
+                                <button type="button" data-modal-trigger="ud" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex-shrink-0">Seleccionar</button>
+                            </div>
+                        `;
+                    } else if (f.type === 'modal-multiselect') {
+                        fieldWrapper = document.createElement('div');
+                        fieldWrapper.innerHTML = `
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${f.label}</label>
+                            <div class="flex items-center gap-4">
+                                <div id="${f.id}-display" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50 min-h-[40px] flex items-center flex-wrap">
+                                    <span class="text-slate-400">No seleccionado</span>
+                                </div>
+                                <input type="hidden" id="${f.id}" name="${f.id}" value="[]">
+                                <button type="button" data-modal-trigger="${f.id}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex-shrink-0">Seleccionar</button>
+                            </div>
+                        `;
+                    } else {
+                       fieldWrapper = ui.createFormField(f.id, f.label, f.type, f.options);
+                    }
+                    
+                    if (['situacionAprendizaje', 'recursos'].includes(f.id)) {
                         fieldWrapper.classList.add('md:col-span-2');
                     }
                     grid.appendChild(fieldWrapper);
@@ -628,8 +766,20 @@
             const form = document.getElementById('session-form');
             form.reset();
             for (const key in data) {
-                if (state.editors[key]) {
-                    state.editors[key].setContents(data[key] || '');
+                if (key === 'unidadDidactica') {
+                    const value = data[key];
+                    document.getElementById('unidadDidactica').value = value || '';
+                    document.getElementById('ud-display').textContent = value ? `Unidad ${value}` : 'No seleccionada';
+                } else if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales'].includes(key)) {
+                    const values = Array.isArray(data[key]) ? data[key] : [];
+                    document.getElementById(key).value = JSON.stringify(values);
+                    ui.updateChipsDisplay(key, values);
+                } else if (state.editors[key]) {
+                    let content = data[key] || '';
+                    if (Array.isArray(content)) {
+                        content = content.join('<br>');
+                    }
+                    state.editors[key].setContents(String(content));
                 } else {
                     const field = form.elements[key];
                     if (field) {
@@ -651,7 +801,7 @@
                     }
                 }
             }
-            document.getElementById('selectedDuaGuidelines').value = JSON.stringify(data.duaGuidelines || []);
+            document.getElementById('selectedDuaGuidelines').value = JSON.stringify(data.duaGuidelines || '[]');
             ui.updateDerivedFields();
         },
         
@@ -675,7 +825,12 @@
                 observaciones: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>')
             };
             const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
-            const createText = (content) => !content || content.trim() === '' || content.trim() === '<p><br></p>' ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<div class="prose prose-sm max-w-none mt-2">${content}</div>`;
+            const createText = (content) => {
+                const strContent = String(content || '');
+                return !strContent || strContent.trim() === '' || strContent.trim() === '<p><br></p>' 
+                    ? '<p class="text-slate-500 italic mt-2">No especificado</p>' 
+                    : `<div class="prose prose-sm max-w-none mt-2">${strContent}</div>`;
+            };
             
             const createCard = (templateId, title, icon, content) => {
                 const template = document.getElementById(templateId);
@@ -797,7 +952,7 @@
         getFormData() {
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
-            const formFields = ['fecha', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
+            const formFields = ['fecha', 'unidadDidactica', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
             const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales'];
 
             config.allEditorIds.forEach(id => {
@@ -809,7 +964,11 @@
             });
 
             formFields.forEach(id => { if (form.elements[id]) data[id] = form.elements[id].value; });
-            multiSelectFields.forEach(id => { if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o => o.value); });
+            multiSelectFields.forEach(id => { 
+                if (form.elements[id]) {
+                    data[id] = JSON.parse(form.elements[id].value || '[]');
+                }
+            });
 
             data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
             data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb => cb.value);
@@ -947,6 +1106,17 @@
             ui.hideDuaModal();
         },
 
+        saveMultiSelect() {
+            const type = state.currentMultiSelect;
+            if (!type) return;
+            
+            const selectedValues = Array.from(document.querySelectorAll(`#multi-select-modal-content input[type="checkbox"]:checked`)).map(cb => cb.value);
+            document.getElementById(type).value = JSON.stringify(selectedValues);
+            ui.updateChipsDisplay(type, selectedValues);
+            app.triggerAutoSave();
+            ui.hideMultiSelectModal();
+        },
+
         triggerAutoSave() {
             const statusEl = document.getElementById('autosave-status');
             statusEl.textContent = 'Guardando...';
@@ -1042,6 +1212,22 @@
             document.getElementById('search-cancel-btn').addEventListener('click', ui.hideSearchModal);
             document.getElementById('search-form').addEventListener('submit', app.handleSearch);
             document.getElementById('search-clear-btn').addEventListener('click', app.clearSearch);
+            
+            document.getElementById('ud-modal-cancel').addEventListener('click', ui.hideUdModal);
+            document.getElementById('multi-select-modal-cancel').addEventListener('click', ui.hideMultiSelectModal);
+            document.getElementById('multi-select-modal-save').addEventListener('click', app.saveMultiSelect);
+
+            document.getElementById('session-form').addEventListener('click', (e) => {
+                const trigger = e.target.closest('[data-modal-trigger]');
+                if (trigger) {
+                    const type = trigger.dataset.modalTrigger;
+                    if (type === 'ud') {
+                        ui.showUdModal();
+                    } else {
+                        ui.showMultiSelectModal(type);
+                    }
+                }
+            });
         }
     };
 
