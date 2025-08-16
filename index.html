@@ -47,10 +47,10 @@
 </head>
 <body class="bg-slate-100 text-slate-800">
   <div id="app-container" class="flex flex-col h-screen">
-    <header class="bg-white shadow-md p-4 flex justify-between items-center no-print">
-      <h1 class="text-2xl font-bold text-slate-700">Planificador Didáctico</h1>
+    <header class="bg-white shadow-md p-3 flex justify-between items-center no-print flex-shrink-0">
+      <h1 class="text-xl font-bold text-slate-700">Planificador Didáctico</h1>
     </header>
-    <main class="flex-grow flex flex-col md:flex-row gap-4 p-4 overflow-hidden no-print">
+    <main class="flex-grow flex flex-col md:flex-row gap-3 p-3 overflow-hidden no-print">
       <aside class="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center gap-2">
           <h2 class="text-lg font-semibold">Sesiones</h2>
@@ -66,7 +66,7 @@
         </div>
       </aside>
       <section class="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
-        <div id="form-header" class="p-4 border-b flex justify-between items-center flex-wrap gap-2">
+        <div id="form-header" class="p-3 border-b flex justify-between items-center flex-wrap gap-2">
           <h2 id="form-title" class="text-lg font-semibold">Selecciona una sesión o crea una nueva</h2>
           <div class="flex items-center gap-2">
             <span id="autosave-status" class="text-sm text-slate-500 transition-opacity duration-300 opacity-0"></span>
@@ -79,7 +79,7 @@
           </div>
         </div>
         <div id="form-container" class="overflow-y-auto flex-grow p-4">
-          <form id="session-form"></form>
+          <form id="session-form" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4"></form>
           <div id="welcome-message" class="text-center text-slate-500 p-8">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <p class="mt-4 text-lg">Haz clic en "Nueva" para empezar a planificar tu primera sesión.</p>
@@ -276,8 +276,7 @@
             materias: ["Filosofía","Hª de la Filosofía","Valores Éticos","Psicología"],
             cursos: ["1º ESO","2º ESO","3º ESO","4º ESO","1º Bachillerato","2º Bachillerato"],
             sesiones: Array.from({length:15},(_,i)=>`Sesión ${i+1}`),
-            tiposEvaluacion: ["Diagnóstica","Formativa","Sumativa","Autoevaluación","Coevaluación"],
-            criteriosCalificacion: ["Examen escrito (40%)","Trabajo de investigación (30%)","Participación en clase (10%)","Portfolio (20%)"],
+            tiposEvaluacion: ["Formativa", "Competencial", "Sumativa", "Heteroevaluación", "Autoevaluación", "Coevaluación"],
             contenidosTransversales: ["Educación para la paz","Educación para la igualdad de género","Educación ambiental","Educación para la salud"],
             contenidos: [
                 "– La investigación ética y la resolución de problemas complejos. El pensamiento crítico y filosófico.",
@@ -305,7 +304,7 @@
                 "– Estilos de vida sostenible: la prevención de los residuos y la gestión sostenible de los recursos. La movilidad segura, saludable y sostenible. El consumo responsable. Alimentación y soberanía alimentaria. Comunidades resilientes y en transición."
             ]
         },
-        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion']
+        allEditorIds: ['situacionAprendizaje', 'contextoReto', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion', 'criteriosCalificacion']
     };
 
     // =============================
@@ -436,6 +435,9 @@
             } else if (type === 'contenidos') {
                 title = 'Seleccionar Contenidos';
                 options = config.appData.contenidos;
+            } else if (type === 'tiposEvaluacion') {
+                title = 'Seleccionar Tipos de Evaluación';
+                options = config.appData.tiposEvaluacion;
             }
 
             titleEl.textContent = title;
@@ -659,7 +661,7 @@
                     { id:'actividad1', label:'Actividad 1', type:'textarea' }, { id:'actividad2', label:'Actividad 2', type:'textarea' }, { id:'actividad3', label:'Actividad 3', type:'textarea' }, { id:'actividad4', label:'Actividad 4', type:'textarea' },
                 ]},
                 { step:4, legend: 'Evaluación', fields:[
-                    { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'modal-multiselect' }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'modal-multiselect' }, { id:'recursos', label:'Recursos', type:'textarea' },
+                    { id:'criteriosEvaluacion', label:'Criterios de Evaluación', type:'checkbox-group', options: config.evaluationData }, { id:'instrumentosEvaluacion', label:'Instrumentos de Evaluación', type:'textarea' }, { id:'tiposEvaluacion', label:'Tipos de Evaluación', type:'modal-multiselect' }, { id:'criteriosCalificacion', label:'Criterios de Calificación', type:'textarea' }, { id:'recursos', label:'Recursos', type:'textarea' },
                 ]},
                 { step:5, legend: 'Marco Pedagógico (Automático)', fields:[
                     { id:'competenciaEspecifica', label:'Competencia Específica', type:'readonly-textarea' }, { id:'descriptoresOperativos', label:'Descriptores Operativos', type:'readonly-textarea' }, { id:'competenciasClave', label:'Competencias Clave', type:'readonly-textarea' }, { id:'contenidosTransversales', label:'Contenidos Transversales', type:'modal-multiselect' },
@@ -706,7 +708,7 @@
                        fieldWrapper = ui.createFormField(f.id, f.label, f.type, f.options);
                     }
                     
-                    if (['situacionAprendizaje', 'recursos'].includes(f.id)) {
+                    if (['situacionAprendizaje', 'recursos', 'criteriosCalificacion'].includes(f.id)) {
                         fieldWrapper.classList.add('md:col-span-2');
                     }
                     grid.appendChild(fieldWrapper);
@@ -798,7 +800,7 @@
                     const value = data[key];
                     document.getElementById('unidadDidactica').value = value || '';
                     document.getElementById('ud-display').textContent = value ? `Unidad ${value}` : 'No seleccionada';
-                } else if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales', 'contenidos'].includes(key)) {
+                } else if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'].includes(key)) {
                     const values = Array.isArray(data[key]) ? data[key] : [];
                     document.getElementById(key).value = JSON.stringify(values);
                     ui.updateChipsDisplay(key, values);
@@ -876,7 +878,7 @@
             const situacionBody = data.situacionAprendizaje || '';
 
             const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act && act.trim() !== '<p><br></p>' ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
-            const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createList(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
+            const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createText(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
             const marcoContent = `<strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createList(data.contenidosTransversales)}`;
             const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
             const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createText(data.adaptacion)}`;
@@ -981,7 +983,7 @@
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
             const formFields = ['fecha', 'unidadDidactica', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
-            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'criteriosCalificacion', 'contenidosTransversales', 'contenidos'];
+            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'];
 
             config.allEditorIds.forEach(id => {
                 if (state.editors[id] && state.editors[id].core) {
