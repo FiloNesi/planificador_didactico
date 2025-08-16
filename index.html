@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 8px; }
@@ -18,12 +18,28 @@
     .checkbox-group { max-height: 20rem; }
     .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Estilos para la impresión */
     @media print {
       body * { visibility: hidden; }
       #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        -webkit-print-color-adjust: exact; /* Para que se impriman los colores de fondo */
+        color-adjust: exact;
+      }
       .no-print { display: none; }
     }
+    /* Clases de Prosa para Tailwind, para el contenido del informe */
+    .prose { color: #334155; max-width: 65ch; }
+    .prose a { color: #4f46e5; text-decoration: underline; }
+    .prose strong { color: #1e293b; font-weight: 600; }
+    .prose blockquote { border-left-color: #e2e8f0; }
+    .prose thead { border-bottom-color: #e2e8f0; }
+    .prose-sm { font-size: 0.875rem; line-height: 1.5; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -33,22 +49,30 @@
     </header>
     <main class="flex-grow flex flex-col md:flex-row gap-4 p-4 overflow-hidden no-print">
       <aside class="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center">
-          <h2 class="text-lg font-semibold">Sesiones Guardadas</h2>
-          <button id="new-session-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Nueva</button>
+        <div class="p-4 border-b flex justify-between items-center gap-2">
+          <h2 class="text-lg font-semibold">Sesiones</h2>
+          <div class="flex gap-2">
+            <button id="search-session-btn" class="bg-slate-500 hover:bg-slate-600 text-white font-bold p-2 rounded-lg transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+            </button>
+            <button id="new-session-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Nueva</button>
+          </div>
         </div>
         <div id="session-list" class="overflow-y-auto flex-grow p-2">
-          <div id="loading-sessions" class="p-4 text-center text-slate-500">Cargando sesiones...</div>
+          <!-- El contenido se genera dinámicamente -->
         </div>
       </aside>
       <section class="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
         <div id="form-header" class="p-4 border-b flex justify-between items-center flex-wrap gap-2">
           <h2 id="form-title" class="text-lg font-semibold">Selecciona una sesión o crea una nueva</h2>
-          <div id="action-buttons" class="flex gap-2 hidden">
-            <button id="save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar</button>
-            <button id="duplicate-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Duplicar</button>
-            <button id="print-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Imprimir</button>
-            <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Eliminar</button>
+          <div class="flex items-center gap-2">
+            <span id="autosave-status" class="text-sm text-slate-500 transition-opacity duration-300 opacity-0"></span>
+            <div id="action-buttons" class="flex gap-2 hidden">
+              <button id="save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar</button>
+              <button id="duplicate-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Duplicar</button>
+              <button id="print-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Imprimir</button>
+              <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Eliminar</button>
+            </div>
           </div>
         </div>
         <div id="form-container" class="overflow-y-auto flex-grow p-4">
@@ -84,6 +108,49 @@
       </div>
     </div>
   </div>
+  
+  <!-- Modal Búsqueda -->
+  <div id="search-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 no-print">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2 mx-auto">
+        <h3 class="text-xl font-bold text-slate-800 mb-4">Buscar Sesiones</h3>
+        <form id="search-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="search-materia" class="block text-sm font-medium text-slate-700 mb-1">Materia</label>
+                    <select id="search-materia" name="materia" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div>
+                    <label for="search-curso" class="block text-sm font-medium text-slate-700 mb-1">Curso</label>
+                    <select id="search-curso" name="curso" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                 <div>
+                    <label for="search-sesion" class="block text-sm font-medium text-slate-700 mb-1">Sesión</label>
+                    <select id="search-sesion" name="sesionNum" multiple class="w-full p-2 h-32 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div>
+                    <label for="search-titulo" class="block text-sm font-medium text-slate-700 mb-1">Título</label>
+                    <input type="text" id="search-titulo" name="situacionAprendizaje" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contiene el texto...">
+                </div>
+                <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="search-fecha-desde" class="block text-sm font-medium text-slate-700 mb-1">Fecha Desde</label>
+                        <input type="date" id="search-fecha-desde" name="fechaDesde" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="search-fecha-hasta" class="block text-sm font-medium text-slate-700 mb-1">Fecha Hasta</label>
+                        <input type="date" id="search-fecha-hasta" name="fechaHasta" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-4 border-t">
+                <button id="search-clear-btn" type="button" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Limpiar</button>
+                <button id="search-cancel-btn" type="button" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                <button id="search-submit-btn" type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Buscar</button>
+            </div>
+        </form>
+    </div>
+  </div>
+
 
   <script type="module">
     // =============================
@@ -93,19 +160,19 @@
 
     const evaluationData = [
       { id: "1.1", text: "1.1 Construir y expresar un concepto ajustado de sí mismo reconociendo las múltiples dimensiones de su naturaleza y personalidad, así como de la dimensión cívica y moral de la misma, a partir de la investigación y el diálogo en torno a diversas concepciones sobre la naturaleza humana.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.2", text: "1.2 Identificar, gestionar y comunicar ideas, emociones, afectos y deseos con comprensión y empatía hacia las demás personas, demostrando autoestima y compartiendo un concepto adecuado de lo que deben ser las relaciones con otras personas, incluyendo el ámbito afectivo-sexual.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral a través de la práctica de la deliberación racional, el uso de conceptos éticos, y el diálogo respetuoso con los demás en torno a distintos valores y modos de vida, así como a problemas relacionados con el ejercicio de los derechos individuales, el uso responsable y seguro de las redes, las conductas adictivas y el acoso escolar.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
-            { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica, respetuosa, democrática y comprometida con el bien común, a partir de la investigación sobre la naturaleza social y política del ser humano y el uso y comprensión crítica de los conceptos de ley, poder, soberanía, justicia, Estado, democracia, memoria democrática, dignidad y derechos humanos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa y democrática a través del conocimiento del movimiento asociativo y la participación respetuosa, dialogante y constructiva en actividades de grupo que impliquen tomar decisiones colectivas, planificar acciones coordinadas y resolver problemas aplicando procedimientos y principios cívicos, éticos y democráticos explícitos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.3", text: "2.3 Contribuir a generar un compromiso activo con el bien común a través del análisis y la toma razonada y dialogante de posición en torno a cuestiones éticas de actualidad como la lucha contra la desigualdad y la pobreza, el derecho al trabajo, la salud, la educación y la justicia, así como sobre los fines y límites éticos de la investigación científica.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.4", text: "2.4 Tomar consciencia de la lucha por una efectiva igualdad de género, y del problema de la violencia y explotación sobre las mujeres, a través del análisis de las diversas olas y corrientes del feminismo y de las medidas de prevención de la desigualdad, la violencia y la discriminación por razón de género y orientación sexual, mostrando igualmente conocimiento de los derechos LGTBIQ+ y reconociendo la necesidad de respetarlos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.5", text: "2.5 Contribuir activamente al bienestar social adoptando una posición propia, explícita, informada y éticamente fundamentada sobre el valor y pertinencia de los derechos humanos, el respeto por la diversidad etnocultural, la consideración de los bienes públicos globales y la percepción del valor social de los impuestos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "2.6", text: "2.6 Contribuir a la consecución de un mundo más justo y pacífico a través del análisis y reconocimiento de la historia democrática de nuestro país y de las funciones del Estado de derecho y sus instituciones, los organismos internacionales, las asociaciones civiles y los cuerpos y fuerzas de seguridad del Estado, en su empeño por lograr la paz y la seguridad integral, atender a las víctimas de la violencia y promover la solidaridad y cooperación entre las personas y los pueblos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
-            { id: "3.1", text: "3.1 Describir las relaciones históricas de interconexión, interdependencia y ecodependencia entre nuestras vidas y el entorno a partir del análisis de las causas y consecuencias de los más graves problemas ecosociales que nos afectan.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.2", text: "3.2 Valorar distintos planteamientos científicos, políticos y éticos con los que afrontar la emergencia climática y la crisis medioambiental a través de la exposición y el debate argumental en torno a los mismos.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "3.3", text: "3.3 Promover estilos de vida éticamente comprometidos con el logro de un desarrollo sostenible, contribuyendo por sí mismo y en su entorno a la prevención de los residuos, la gestión sostenible de los recursos, la movilidad segura, sostenible y saludable, el comercio justo, el consumo responsable, el cuidado del patrimonio natural, el respeto por la diversidad etnocultural, y el cuidado y protección de los animales.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
-            { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones, de estima y cuidado de sí mismo y de los otros, identificando, analizando y expresando de manera asertiva las propias emociones y sentimientos, y reconociendo y valorando los de los demás en distintos contextos y en torno a actividades creativas y de reflexión individual o dialogada sobre cuestiones éticas y cívicas.", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
-         ];
+      { id: "1.2", text: "1.2 Identificar, gestionar y comunicar ideas, emociones, afectos y deseos con comprensión y empatía hacia las demás personas, demostrando autoestima y compartiendo un concepto adecuado de lo que deben ser las relaciones con otras personas, incluyendo el ámbito afectivo-sexual.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
+      { id: "1.3", text: "1.3 Desarrollar y demostrar autonomía moral a través de la práctica de la deliberación racional, el uso de conceptos éticos, y el diálogo respetuoso con los demás en torno a distintos valores y modos de vida, así como a problemas relacionados con el ejercicio de los derechos individuales, el uso responsable y seguro de las redes, las conductas adictivas y el acoso escolar.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
+      { id: "2.1", text: "2.1 Promover y demostrar una convivencia pacífica, respetuosa, democrática y comprometida con el bien común, a partir de la investigación sobre la naturaleza social y política del ser humano y el uso y comprensión crítica de los conceptos de ley, poder, soberanía, justicia, Estado, democracia, memoria democrática, dignidad y derechos humanos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.2", text: "2.2 Fomentar el ejercicio de la ciudadanía activa y democrática a través del conocimiento del movimiento asociativo y la participación respetuosa, dialogante y constructiva en actividades de grupo que impliquen tomar decisiones colectivas, planificar acciones coordinadas y resolver problemas aplicando procedimientos y principios cívicos, éticos y democráticos explícitos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.3", text: "2.3 Contribuir a generar un compromiso activo con el bien común a través del análisis y la toma razonada y dialogante de posición en torno a cuestiones éticas de actualidad como la lucha contra la desigualdad y la pobreza, el derecho al trabajo, la salud, la educación y la justicia, así como sobre los fines y límites éticos de la investigación científica.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.4", text: "2.4 Tomar consciencia de la lucha por una efectiva igualdad de género, y del problema de la violencia y explotación sobre las mujeres, a través del análisis de las diversas olas y corrientes del feminismo y de las medidas de prevención de la desigualdad, la violencia y la discriminación por razón de género y orientación sexual, mostrando igualmente conocimiento de los derechos LGTBIQ+ y reconociendo la necesidad de respetarlos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.5", text: "2.5 Contribuir activamente al bienestar social adoptando una posición propia, explícita, informada y éticamente fundamentada sobre el valor y pertinencia de los derechos humanos, el respeto por la diversidad etnocultural, la consideración de los bienes públicos globales y la percepción del valor social de los impuestos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "2.6", text: "2.6 Contribuir a la consecución de un mundo más justo y pacífico a través del análisis y reconocimiento de la historia democrática de nuestro país y de las funciones del Estado de derecho y sus instituciones, los organismos internacionales, las asociaciones civiles y los cuerpos y fuerzas de seguridad del Estado, en su empeño por lograr la paz y la seguridad integral, atender a las víctimas de la violencia y promover la solidaridad y cooperación entre las personas y los pueblos.", cesp: "CESP2", descriptores: ["CCL5", "CD3", "CC1", "CC2", "CC3", "CC4", "CCEC1"], claves: ["CCL", "CD", "CC", "CCEC"] },
+      { id: "3.1", text: "3.1 Describir las relaciones históricas de interconexión, interdependencia y ecodependencia entre nuestras vidas y el entorno a partir del análisis de las causas y consecuencias de los más graves problemas ecosociales que nos afectan.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "3.2", text: "3.2 Valorar distintos planteamientos científicos, políticos y éticos con los que afrontar la emergencia climática y la crisis medioambiental a través de la exposición y el debate argumental en torno a los mismos.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "3.3", text: "3.3 Promover estilos de vida éticamente comprometidos con el logro de un desarrollo sostenible, contribuyendo por sí mismo y en su entorno a la prevención de los residuos, la gestión sostenible de los recursos, la movilidad segura, sostenible y saludable, el comercio justo, el consumo responsable, el cuidado del patrimonio natural, el respeto por la diversidad etnocultural, y el cuidado y protección de los animales.", cesp: "CESP3", descriptores: ["STEM5", "CPSAA2", "CC1", "CC2", "CC3", "CC4", "CE1"], claves: ["STEM", "CPSAA", "CC", "CE"] },
+      { id: "4.1", text: "4.1 Desarrollar una actitud de gestión equilibrada de las emociones, de estima y cuidado de sí mismo y de los otros, identificando, analizando y expresando de manera asertiva las propias emociones y sentimientos, y reconociendo y valorando los de los demás en distintos contextos y en torno a actividades creativas y de reflexión individual o dialogada sobre cuestiones éticas y cívicas.", cesp: "CESP4", descriptores: ["CCL1", "CPSAA1", "CPSAA2", "CPSAA3", "CC1", "CC3", "CCEC3"], claves: ["CCL", "CPSAA", "CC", "CCEC"] }
+    ];
 
     const duaData = {
       principle1: { title: "I. Proporcionar múltiples medios de representación", guidelines: [
@@ -139,6 +206,7 @@
     let currentSessionId = null;
     let currentDuaPrincipleKey = null;
     let allSessions = [];
+    let autoSaveTimer = null;
 
     // =============================
     // Modales
@@ -188,6 +256,73 @@
       document.getElementById('selectedDuaGuidelines').value = JSON.stringify([...other, ...newly]);
       hideDuaModal();
     }
+    
+    // =============================
+    // Search Modal
+    // =============================
+    function showSearchModal() {
+        const populateSelect = (selectId, data) => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '';
+            data.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                select.appendChild(o);
+            });
+        };
+        populateSelect('search-materia', appData.materias);
+        populateSelect('search-curso', appData.cursos);
+        populateSelect('search-sesion', appData.sesiones);
+        document.getElementById('search-modal').classList.remove('hidden');
+    }
+
+    function hideSearchModal() {
+        document.getElementById('search-modal').classList.add('hidden');
+    }
+
+    function handleSearch(event) {
+        event.preventDefault();
+        const form = document.getElementById('search-form');
+        const filters = {
+            materia: Array.from(form.elements['materia'].selectedOptions).map(o => o.value),
+            curso: Array.from(form.elements['curso'].selectedOptions).map(o => o.value),
+            sesionNum: Array.from(form.elements['sesionNum'].selectedOptions).map(o => o.value),
+            situacionAprendizaje: form.elements['situacionAprendizaje'].value.toLowerCase(),
+            fechaDesde: form.elements['fechaDesde'].value,
+            fechaHasta: form.elements['fechaHasta'].value
+        };
+
+        const filteredSessions = allSessions.filter(session => {
+            const titleMatch = !filters.situacionAprendizaje || (session.situacionAprendizaje || '').toLowerCase().includes(filters.situacionAprendizaje);
+            const materiaMatch = filters.materia.length === 0 || (session.materia || []).some(m => filters.materia.includes(m));
+            const cursoMatch = filters.curso.length === 0 || (session.curso || []).some(c => filters.curso.includes(c));
+            const sesionMatch = filters.sesionNum.length === 0 || (session.sesionNum || []).some(s => filters.sesionNum.includes(s));
+            
+            const sessionDate = session.fecha;
+            let dateMatch = true;
+            if (filters.fechaDesde && sessionDate) {
+                dateMatch = dateMatch && (sessionDate >= filters.fechaDesde);
+            }
+            if (filters.fechaHasta && sessionDate) {
+                dateMatch = dateMatch && (sessionDate <= filters.fechaHasta);
+            }
+            if ((filters.fechaDesde || filters.fechaHasta) && !sessionDate) {
+                dateMatch = false;
+            }
+
+            return titleMatch && materiaMatch && cursoMatch && sesionMatch && dateMatch;
+        });
+
+        renderSessionList(filteredSessions);
+        hideSearchModal();
+    }
+    
+    function clearSearch() {
+        document.getElementById('search-form').reset();
+        renderSessionList();
+    }
+
 
     // =============================
     // Form helpers
@@ -203,6 +338,10 @@
       let field;
       if (type === 'textarea'){
         field = document.createElement('textarea'); field.rows = 3;
+        field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
+      } else if (type === 'date') {
+        field = document.createElement('input');
+        field.type = 'date';
         field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
       } else if (type === 'readonly-textarea'){
         field = document.createElement('textarea'); field.rows = 3; field.readOnly = true;
@@ -260,6 +399,9 @@
       const materia = Array.from(form.elements['materia']?.selectedOptions || []).map(o=>o.value);
       const curso = Array.from(form.elements['curso']?.selectedOptions || []).map(o=>o.value);
       const sesionNum = Array.from(form.elements['sesionNum']?.selectedOptions || []).map(o=>o.value);
+      const fecha = form.elements['fecha']?.value;
+      const formattedDate = fecha ? new Date(fecha+'T00:00:00').toLocaleDateString('es-ES') : '<span class="text-slate-400">Sin fecha</span>';
+
       const summary = document.getElementById('info-summary') || (()=>{ const d=document.createElement('div'); d.id='info-summary'; d.className='hidden mb-4'; document.getElementById('form-step-2')?.prepend(d); return d; })();
       summary.innerHTML = `
         <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
@@ -267,11 +409,12 @@
             <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Información general</h3>
             <button id="edit-info-btn" type="button" class="text-xs font-semibold text-blue-600 hover:underline">Editar</button>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div><div class="text-xs uppercase text-slate-500">Título</div><div class="text-sm text-slate-800">${title || '<span class="text-slate-400">Sin título</span>'}</div></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div class="lg:col-span-2"><div class="text-xs uppercase text-slate-500">Título</div><div class="text-sm text-slate-800">${title || '<span class="text-slate-400">Sin título</span>'}</div></div>
             <div><div class="text-xs uppercase text-slate-500">Materia(s)</div><div>${chipsHtml(materia)}</div></div>
             <div><div class="text-xs uppercase text-slate-500">Curso(s)</div><div>${chipsHtml(curso)}</div></div>
             <div><div class="text-xs uppercase text-slate-500">Sesión(es)</div><div>${chipsHtml(sesionNum)}</div></div>
+            <div><div class="text-xs uppercase text-slate-500">Fecha</div><div class="text-sm text-slate-800">${formattedDate}</div></div>
           </div>
         </div>`;
       summary.classList.remove('hidden');
@@ -296,6 +439,7 @@
       const fieldsets = [
         { step:1, legend: 'Información General', fields:[
           { id:'situacionAprendizaje', label:'Situación de Aprendizaje', type:'textarea' },
+          { id:'fecha', label:'Fecha', type:'date' },
           { id:'materia', label:'Materia', type:'select-multiple', options: appData.materias },
           { id:'curso', label:'Curso', type:'select-multiple', options: appData.cursos },
           { id:'sesionNum', label:'Nº de la Sesión', type:'select-multiple', options: appData.sesiones },
@@ -323,12 +467,27 @@
           { id:'dua', label:'DUA', type:'dua-group' },
           { id:'adaptacion', label:'Adaptación', type:'select-multiple', options: appData.adaptaciones },
         ]},
+        { step:2, legend: 'Observaciones', fields:[
+          { id:'observaciones', label:'Observaciones y notas adicionales', type:'textarea' },
+        ]},
       ];
       fieldsets.forEach(fs => {
         const fsEl = document.createElement('fieldset'); fsEl.className='border border-slate-200 p-4 rounded-lg';
         const legend = document.createElement('legend'); legend.className='text-md font-semibold px-2 text-slate-600'; legend.textContent=fs.legend; fsEl.appendChild(legend);
-        const grid = document.createElement('div'); grid.className='grid grid-cols-1 md:grid-cols-2 gap-4';
-        fs.fields.forEach(f => grid.appendChild(createFormField(f.id, f.label, f.type, f.options)));
+        const grid = document.createElement('div'); 
+        grid.className = fs.fields.length > 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4';
+        if (fs.legend === 'Información General') {
+            grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+            const saWrapper = createFormField('situacionAprendizaje', 'Situación de Aprendizaje', 'textarea');
+            saWrapper.classList.add('md:col-span-2');
+            grid.appendChild(saWrapper);
+            grid.appendChild(createFormField('fecha', 'Fecha', 'date'));
+            grid.appendChild(createFormField('materia', 'Materia', 'select-multiple', appData.materias));
+            grid.appendChild(createFormField('curso', 'Curso', 'select-multiple', appData.cursos));
+            grid.appendChild(createFormField('sesionNum', 'Nº de la Sesión', 'select-multiple', appData.sesiones));
+        } else {
+            fs.fields.forEach(f => grid.appendChild(createFormField(f.id, f.label, f.type, f.options)));
+        }
         fsEl.appendChild(grid);
         (fs.step===1?step1:step2).appendChild(fsEl);
       });
@@ -351,20 +510,34 @@
     }
 
     // =============================
-    // Datos
+    // Datos y Autoguardado
     // =============================
     async function loadSessions(){
-      const loadingEl = document.getElementById('loading-sessions'); loadingEl.textContent='Cargando sesiones...';
-      try { allSessions = await apiCall('getSessions'); renderSessionList(); }
-      catch (error){ console.error('Error detallado al cargar sesiones:', error); loadingEl.textContent='Error al cargar sesiones.'; showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`); }
+      const sessionList = document.getElementById('session-list');
+      sessionList.innerHTML = '<div id="loading-sessions" class="p-4 text-center text-slate-500">Cargando sesiones...</div>';
+      try {
+          allSessions = await apiCall('getSessions');
+          renderSessionList();
+      }
+      catch (error){
+          console.error('Error detallado al cargar sesiones:', error);
+          const loadingEl = document.getElementById('loading-sessions');
+          if (loadingEl) {
+              loadingEl.textContent='Error al cargar sesiones.';
+          }
+          showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`);
+      }
     }
 
-    function renderSessionList(){
-      const sessionList = document.getElementById('session-list'); const loadingEl = document.getElementById('loading-sessions');
-      loadingEl.style.display = 'none'; sessionList.innerHTML = '';
-      if (!allSessions.length){ sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No hay sesiones guardadas.</p>'; return; }
-      allSessions.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
-      allSessions.forEach(session => {
+    function renderSessionList(sessionsToRender = allSessions){
+      const sessionList = document.getElementById('session-list'); 
+      sessionList.innerHTML = '';
+      if (!sessionsToRender.length){ 
+          sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No se encontraron sesiones.</p>'; 
+          return; 
+      }
+      sessionsToRender.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+      sessionsToRender.forEach(session => {
         const div = document.createElement('div');
         div.className = `p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors ${currentSessionId === session.id ? 'bg-blue-100 border-blue-500' : 'hover:bg-slate-100 border-transparent'}`;
         div.dataset.id = session.id;
@@ -374,30 +547,69 @@
         div.addEventListener('click', ()=>displaySession(session.id)); sessionList.appendChild(div);
       });
     }
+    
+    function populateForm(data) {
+        const form = document.getElementById('session-form');
+        form.reset();
+        for (const key in data){
+            const field = form.elements[key];
+            if (field){
+                if (field.multiple){ 
+                    const values = Array.isArray(data[key]) ? data[key] : [];
+                    for (const opt of field.options) opt.selected = values.includes(opt.value);
+                } else {
+                    field.value = data[key] || '';
+                }
+            } else if (key === 'criteriosEvaluacion' || key === 'dua'){
+                const saved = Array.isArray(data[key]) ? data[key] : [];
+                document.querySelectorAll(`input[name="${key}"]`).forEach(cb => {
+                    cb.checked = saved.includes(cb.value);
+                });
+            }
+        }
+        document.getElementById('selectedDuaGuidelines').value = JSON.stringify(data.duaGuidelines || []);
+        updateDerivedFields();
+    }
+
+    function getFormData() {
+        const form = document.getElementById('session-form');
+        const data = { id: currentSessionId };
+        ['situacionAprendizaje','fecha','actividad1','actividad2','actividad3','actividad4','instrumentosEvaluacion','recursos','competenciaEspecifica','descriptoresOperativos','competenciasClave', 'observaciones'].forEach(id=>{ if (form.elements[id]) data[id] = form.elements[id].value; });
+        ['materia','curso','sesionNum','tiposEvaluacion','criteriosCalificacion','contenidosTransversales','adaptacion'].forEach(id=>{ if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o=>o.value); });
+        data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb=>cb.value);
+        data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb=>cb.value);
+        data.duaGuidelines = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
+        return data;
+    }
 
     function displaySession(sessionId){
       const sessionData = allSessions.find(s=>s.id===sessionId); if (!sessionData) return;
+      
       document.getElementById('welcome-message').style.display = 'none';
       document.getElementById('session-form').style.display = 'block';
       document.getElementById('action-buttons').classList.remove('hidden');
       document.getElementById('form-step-1').classList.remove('hidden');
       document.getElementById('form-step-2').classList.remove('hidden');
       document.getElementById('continue-btn').classList.add('hidden');
-      const form = document.getElementById('session-form'); form.reset(); currentSessionId = sessionData.id;
+      
+      currentSessionId = sessionId;
       const title = sessionData.situacionAprendizaje?.split('\n')[0] || 'Sesión sin título';
       document.getElementById('form-title').textContent = `Editando: ${title}`;
       document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id===currentSessionId); div.classList.toggle('border-blue-500', div.dataset.id===currentSessionId); });
-      for (const key in sessionData){
-        const field = form.elements[key];
-        if (field){
-          if (field.multiple){ const values = Array.isArray(sessionData[key]) ? sessionData[key] : []; for (const opt of field.options) opt.selected = values.includes(opt.value); }
-          else { field.value = sessionData[key] || ''; }
-        } else if (key==='criteriosEvaluacion' || key==='dua'){
-          const saved = Array.isArray(sessionData[key]) ? sessionData[key] : []; document.querySelectorAll(`input[name="${key}"]`).forEach(cb=>{ cb.checked = saved.includes(cb.value); });
-        }
+
+      const autoSavedDataRaw = localStorage.getItem(`autosave_${sessionId}`);
+      if (autoSavedDataRaw) {
+        const autoSavedData = JSON.parse(autoSavedDataRaw);
+        showModal('Restaurar Sesión', 'Se han encontrado datos autoguardados para esta sesión. ¿Quieres restaurarlos?', {
+            buttons: [
+                { text: 'No, usar versión guardada', class: 'bg-slate-500', callback: () => populateForm(sessionData) },
+                { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => populateForm(autoSavedData) }
+            ]
+        });
+      } else {
+        populateForm(sessionData);
       }
-      document.getElementById('selectedDuaGuidelines').value = JSON.stringify(sessionData.duaGuidelines || []);
-      updateDerivedFields();
+
       renderInfoSummary();
       document.getElementById('form-step-1').classList.add('hidden');
       document.getElementById('form-step-2').classList.remove('hidden');
@@ -419,18 +631,36 @@
       document.querySelectorAll('#session-list > div').forEach(div => div.classList.remove('bg-blue-100','border-blue-500'));
       const summary = document.getElementById('info-summary'); if (summary){ summary.classList.add('hidden'); summary.innerHTML=''; }
       document.getElementById('situacionAprendizaje')?.focus();
+
+      const autoSavedDataRaw = localStorage.getItem('autosave_new');
+      if (autoSavedDataRaw) {
+          const autoSavedData = JSON.parse(autoSavedDataRaw);
+          showModal('Restaurar Borrador', 'Se ha encontrado un borrador no guardado. ¿Quieres restaurarlo?', {
+              buttons: [
+                  { text: 'No, empezar de cero', class: 'bg-slate-500', callback: () => localStorage.removeItem('autosave_new') },
+                  { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => populateForm(autoSavedData) }
+              ]
+          });
+      }
     }
 
     async function saveSession(){
-      const form = document.getElementById('session-form');
-      const data = { id: currentSessionId };
-      ['situacionAprendizaje','actividad1','actividad2','actividad3','actividad4','instrumentosEvaluacion','recursos','competenciaEspecifica','descriptoresOperativos','competenciasClave'].forEach(id=>{ if (form.elements[id]) data[id] = form.elements[id].value; });
-      ['materia','curso','sesionNum','tiposEvaluacion','criteriosCalificacion','contenidosTransversales','adaptacion'].forEach(id=>{ if (form.elements[id]) data[id] = Array.from(form.elements[id].selectedOptions).map(o=>o.value); });
-      data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb=>cb.value);
-      data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb=>cb.value);
-      data.duaGuidelines = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
+      const data = getFormData();
       showModal('Guardando...', '', { showSpinner: true, buttons: [] });
-      try { const r = await apiCall('saveSession', { data }); if (!currentSessionId) currentSessionId = r.id; showModal('Éxito','¡Sesión guardada correctamente!'); loadSessions(); }
+      try { 
+        const r = await apiCall('saveSession', { data }); 
+        const savedId = r.id;
+        if (!currentSessionId) currentSessionId = savedId;
+        
+        localStorage.removeItem(`autosave_${savedId}`);
+        if (data.id === null) localStorage.removeItem('autosave_new');
+        document.getElementById('autosave-status').textContent = '';
+        document.getElementById('autosave-status').classList.add('opacity-0');
+
+        showModal('Éxito','¡Sesión guardada correctamente!'); 
+        await loadSessions();
+        displaySession(savedId);
+      }
       catch (error){ console.error('Error al guardar', error); showModal('Error', `Hubo un problema al guardar la sesión: ${error.message}`); }
     }
 
@@ -440,55 +670,86 @@
         { text:'Cancelar', class:'bg-slate-500 hover:bg-slate-600', callback: hideModal },
         { text:'Sí, Eliminar', class:'bg-red-500 hover:bg-red-600', callback: async ()=>{
           showModal('Eliminando...', '', { showSpinner: true, buttons: [] });
-          try { await apiCall('deleteSession',{ id: currentSessionId }); clearForm(); document.getElementById('session-form').style.display='none'; document.getElementById('welcome-message').style.display='block'; showModal('Éxito','Sesión eliminada.'); loadSessions(); }
+          try { 
+            await apiCall('deleteSession',{ id: currentSessionId }); 
+            localStorage.removeItem(`autosave_${currentSessionId}`);
+            clearForm(); 
+            document.getElementById('session-form').style.display='none'; 
+            document.getElementById('welcome-message').style.display='block'; 
+            showModal('Éxito','Sesión eliminada.'); 
+            loadSessions(); 
+          }
           catch (error){ console.error('Error al eliminar', error); showModal('Error', `No se pudo eliminar la sesión: ${error.message}`); }
         }} ]});
     }
 
     function duplicateSession(){
       if (!currentSessionId){ showModal('Aviso','Por favor, selecciona una sesión para duplicar.'); return; }
-      const s = allSessions.find(x=>x.id===currentSessionId); if (!s) return; clearForm(); displaySession(s.id); currentSessionId = null;
-      const titleField = document.getElementById('situacionAprendizaje'); titleField.value = `[COPIA] ${titleField.value}`;
+      const s = allSessions.find(x=>x.id===currentSessionId); if (!s) return; 
+      clearForm(); 
+      populateForm(s);
+      currentSessionId = null;
+      const titleField = document.getElementById('situacionAprendizaje'); 
+      titleField.value = `[COPIA] ${titleField.value}`;
       document.getElementById('form-title').textContent = `Duplicando: ${s.situacionAprendizaje.split('\n')[0]}`;
-      document.getElementById('form-step-2').classList.remove('hidden'); document.getElementById('continue-btn').classList.add('hidden'); document.getElementById('action-buttons').classList.remove('hidden');
+      document.getElementById('form-step-2').classList.remove('hidden'); 
+      document.getElementById('continue-btn').classList.add('hidden'); 
+      document.getElementById('action-buttons').classList.remove('hidden');
       showModal('Sesión Duplicada','Se han copiado los datos. Revisa la información y pulsa "Guardar" para crear la nueva sesión.');
     }
 
-    function printReport(){
-      if (!currentSessionId){ showModal('Aviso','Por favor, guarda la sesión antes de imprimir.'); return; }
-      const data = allSessions.find(s=>s.id===currentSessionId); if (!data) return;
-      const printArea = document.getElementById('print-area');
-      const situacion = data.situacionAprendizaje || 'Situación de Aprendizaje no definida';
-      const list = (items)=> items && items.length? `<ul class=\"list-disc list-inside\">${items.map(i=>`<li>${i}</li>`).join('')}</ul>` : '<span class=\"text-slate-500\">No especificado</span>';
-      const text = (t)=> t? `<p class=\"pl-2 mt-1 text-slate-700\">${t.replace(/\n/g,'<br>')}</p>` : '<span class=\"text-slate-500\">No especificado</span>';
-      const dua = list(data.dua);
-      const duaGL = data.duaGuidelines && data.duaGuidelines.length? `<div><strong class=\"block mt-2\">Pautas Específicas:</strong>${list(data.duaGuidelines)}</div>` : '';
-      printArea.innerHTML = `
-        <div class=\"p-8 font-sans space-y-6 bg-white\">
-          <h1 class=\"text-3xl font-bold border-b pb-2 mb-4\">Programación de Sesión</h1>
-          <div class=\"p-4 border rounded-lg bg-slate-50\"><h2 class=\"text-2xl font-semibold\">${situacion.split('\n')[0]}</h2><p class=\"mt-2\">${situacion.substring(situacion.indexOf('\n')+1).replace(/\n/g,'<br>')}</p></div>
-          <div class=\"grid grid-cols-3 gap-6 text-sm border p-4 rounded-lg\">
-            <div><strong class=\"block mb-1\">Materia(s):</strong> ${list(data.materia)}</div>
-            <div><strong class=\"block mb-1\">Curso(s):</strong> ${list(data.curso)}</div>
-            <div><strong class=\"block mb-1\">Sesión(es):</strong> ${list(data.sesionNum)}</div>
-          </div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Actividades</h3>${[data.actividad1,data.actividad2,data.actividad3,data.actividad4].map((a,i)=>a?`<div class=\"mt-2\"><strong class=\"block\">Actividad ${i+1}:</strong><p class=\"pl-2 mt-1 text-slate-700\">${a.replace(/\n/g,'<br>')}</p></div>`:'').join('')}</div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Evaluación</h3><div><strong>Criterios de Evaluación:</strong> ${list(data.criteriosEvaluacion)}</div><div><strong>Instrumentos:</strong> ${text(data.instrumentosEvaluacion)}</div><div><strong>Tipos de Evaluación:</strong> ${list(data.tiposEvaluacion)}</div><div><strong>Criterios de Calificación:</strong> ${list(data.criteriosCalificacion)}</div><div><strong>Recursos:</strong> ${text(data.recursos)}</div></div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Marco Pedagógico</h3><div><strong>Competencia Específica:</strong> ${text(data.competenciaEspecifica)}</div><div><strong>Descriptores Operativos:</strong> ${text(data.descriptoresOperativos)}</div><div><strong>Competencias Clave:</strong> ${text(data.competenciasClave)}</div><div><strong>Contenidos Transversales:</strong> ${list(data.contenidosTransversales)}</div></div>
-          <div class=\"space-y-4\"><h3 class=\"text-xl font-semibold border-b pb-1\">Atención a la Diversidad</h3><div><strong>Principios DUA:</strong> ${dua} ${duaGL}</div><div><strong>Adaptaciones:</strong> ${list(data.adaptacion)}</div></div>
-        </div>`;
-      window.print();
+    // =============================
+    // Impresión
+    // =============================
+    function printReport() {
+        if (!currentSessionId) {
+            showModal('Aviso', 'Por favor, guarda la sesión antes de imprimir.');
+            return;
+        }
+        const data = allSessions.find(s => s.id === currentSessionId);
+        if (!data) return;
+
+        const printArea = document.getElementById('print-area');
+
+        const createIcon = (path) => `<svg class="w-6 h-6 mr-3 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
+        const icons = {
+            situacion: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            actividades: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.085a2 2 0 00-1.736.97l-1.9 3.8a2 2 0 00.23 2.16l3.5 3.5m7-10L7 5"></path>'),
+            evaluacion: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            marco: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h1a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.737 16.95l.826.826m8.334-8.334l.826.826m-1.06-7.553l.267.267m-1.623 1.623l.267.267M16.95 7.737l.826.826M12 21a9 9 0 100-18 9 9 0 000 18z"></path>'),
+            diversidad: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>'),
+            info: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
+            observaciones: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>')
+        };
+        const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+        const createText = (content) => !content || content.trim() === '' ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<div class="prose prose-sm max-w-none mt-2">${content.replace(/\n/g, '<br>')}</div>`;
+        const createCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-6"><div class="flex items-center">${icon}<h3 class="text-xl font-bold text-slate-800">${title}</h3></div><div class="mt-4 text-slate-600 pl-9">${content}</div></div></div>`;
+        const createSidebarCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-5"><div class="flex items-center border-b border-slate-200 pb-3 mb-3">${icon}<h4 class="text-md font-bold text-slate-700">${title}</h4></div><div class="text-sm text-slate-600">${content}</div></div></div>`;
+        const situacion = data.situacionAprendizaje || '', situacionTitle = situacion.split('\n')[0] || 'Situación de Aprendizaje sin Título', situacionBody = situacion.substring(situacion.indexOf('\n') + 1);
+        const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
+        const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createList(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
+        const marcoContent = `<strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createList(data.contenidosTransversales)}`;
+        const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
+        const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createList(data.adaptacion)}`;
+        const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? `<div class="prose prose-sm max-w-none mt-2">${data.observaciones.replace(/\n/g, '<br>')}</div>` : `<div class="h-48"></div>`;
+        const fecha = data.fecha ? new Date(data.fecha+'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No especificada';
+        const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
+        printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><main class="lg:col-span-2">${createCard('Situación de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody.replace(/\n/g, '<br>')}</div>`)}${createCard('Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}</main><aside>${createSidebarCard('Información General', icons.info, infoGeneralContent)}${createSidebarCard('Marco Pedagógico', icons.marco, marcoContent)}</aside></div><div class="mt-2">${createCard('Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
+        window.print();
     }
+
 
     // =============================
     // DOM Ready
     // =============================
     document.addEventListener('DOMContentLoaded', ()=>{
       buildForm();
-      document.getElementById('session-form').style.display = 'none';
-      if (SCRIPT_URL.includes('Pega aquí')){ showModal('Configuración Requerida','Debes editar el archivo HTML y pegar la URL de tu script de Google para que la aplicación funcione.'); document.getElementById('loading-sessions').textContent = 'Configuración requerida.'; }
+      const form = document.getElementById('session-form');
+      form.style.display = 'none';
+      if (SCRIPT_URL.includes('Pega aquí')){ showModal('Configuración Requerida','Debes editar el archivo HTML y pegar la URL de tu script de Google para que la aplicación funcione.'); }
       else { loadSessions(); }
-      document.getElementById('new-session-btn').addEventListener('click', ()=>{ console.debug('Nueva clicada'); clearForm(); });
+      
+      document.getElementById('new-session-btn').addEventListener('click', clearForm);
       document.getElementById('save-btn').addEventListener('click', saveSession);
       document.getElementById('delete-btn').addEventListener('click', deleteSession);
       document.getElementById('print-btn').addEventListener('click', printReport);
@@ -496,6 +757,25 @@
       document.getElementById('continue-btn').addEventListener('click', ()=>{ renderInfoSummary(); document.getElementById('form-step-1').classList.add('hidden'); document.getElementById('form-step-2').classList.remove('hidden'); document.getElementById('continue-btn').classList.add('hidden'); document.getElementById('action-buttons').classList.remove('hidden'); document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión'; });
       document.getElementById('dua-modal-cancel').addEventListener('click', hideDuaModal);
       document.getElementById('dua-modal-save').addEventListener('click', saveDuaGuidelines);
+      
+      document.getElementById('search-session-btn').addEventListener('click', showSearchModal);
+      document.getElementById('search-cancel-btn').addEventListener('click', hideSearchModal);
+      document.getElementById('search-form').addEventListener('submit', handleSearch);
+      document.getElementById('search-clear-btn').addEventListener('click', clearSearch);
+
+      form.addEventListener('input', () => {
+          const statusEl = document.getElementById('autosave-status');
+          statusEl.textContent = 'Guardando...';
+          statusEl.classList.remove('opacity-0');
+          clearTimeout(autoSaveTimer);
+          autoSaveTimer = setTimeout(() => {
+              const data = getFormData();
+              const key = `autosave_${currentSessionId || 'new'}`;
+              localStorage.setItem(key, JSON.stringify(data));
+              statusEl.textContent = 'Guardado ✓';
+              setTimeout(() => statusEl.classList.add('opacity-0'), 2000);
+          }, 1500);
+      });
     });
   </script>
 </body>
