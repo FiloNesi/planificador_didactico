@@ -154,6 +154,38 @@
     </div>
   </div>
 
+  <!-- NUEVO: Plantillas HTML -->
+  <template id="template-session-item">
+    <div class="p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors hover:bg-slate-100 border-transparent">
+      <h3 class="font-semibold truncate" data-template="title"></h3>
+      <p class="text-sm text-slate-500" data-template="subtitle"></p>
+    </div>
+  </template>
+
+  <template id="template-print-card">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200">
+        <div class="p-6">
+            <div class="flex items-center">
+                <div data-template="icon-container"></div>
+                <h3 class="text-xl font-bold text-slate-800" data-template="title"></h3>
+            </div>
+            <div class="mt-4 text-slate-600 pl-9" data-template="content"></div>
+        </div>
+    </div>
+  </template>
+
+  <template id="template-print-sidebar-card">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200">
+        <div class="p-5">
+            <div class="flex items-center border-b border-slate-200 pb-3 mb-3">
+                <div data-template="icon-container"></div>
+                <h4 class="text-md font-bold text-slate-700" data-template="title"></h4>
+            </div>
+            <div class="text-sm text-slate-600" data-template="content"></div>
+        </div>
+    </div>
+  </template>
+
   <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
 
   <script type="module">
@@ -499,6 +531,7 @@
 
         renderSessionList(sessionsToRender = state.allSessions) {
             const sessionList = document.getElementById('session-list');
+            const template = document.getElementById('template-session-item');
             sessionList.innerHTML = '';
             if (!sessionsToRender.length) {
                 sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No se encontraron sesiones.</p>';
@@ -506,16 +539,20 @@
             }
             sessionsToRender.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             sessionsToRender.forEach(session => {
-                const div = document.createElement('div');
-                div.className = `p-3 m-1 rounded-lg cursor-pointer border-l-4 transition-colors ${state.currentSessionId === session.id ? 'bg-blue-100 border-blue-500' : 'hover:bg-slate-100 border-transparent'}`;
-                div.dataset.id = session.id;
+                const clone = template.content.cloneNode(true);
+                const div = clone.querySelector('div');
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = session.situacionAprendizaje || '';
                 const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
                 const subtitle = `${session.materia?.[0] || 'Sin materia'} - ${session.curso?.[0] || 'Sin curso'}`;
-                div.innerHTML = `<h3 class=\"font-semibold truncate\">${title}</h3><p class=\"text-sm text-slate-500\">${subtitle}</p>`;
+                
+                div.dataset.id = session.id;
+                div.classList.toggle('bg-blue-100', state.currentSessionId === session.id);
+                div.classList.toggle('border-blue-500', state.currentSessionId === session.id);
+                clone.querySelector('[data-template="title"]').textContent = title;
+                clone.querySelector('[data-template="subtitle"]').textContent = subtitle;
                 div.addEventListener('click', () => app.displaySession(session.id));
-                sessionList.appendChild(div);
+                sessionList.appendChild(clone);
             });
         },
 
@@ -567,9 +604,16 @@
             };
             const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
             const createText = (content) => !content || content.trim() === '' || content.trim() === '<p><br></p>' ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<div class="prose prose-sm max-w-none mt-2">${content}</div>`;
-            const createCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-6"><div class="flex items-center">${icon}<h3 class="text-xl font-bold text-slate-800">${title}</h3></div><div class="mt-4 text-slate-600 pl-9">${content}</div></div></div>`;
-            const createSidebarCard = (title, icon, content) => `<div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 print:shadow-none print:border print:border-slate-200"><div class="p-5"><div class="flex items-center border-b border-slate-200 pb-3 mb-3">${icon}<h4 class="text-md font-bold text-slate-700">${title}</h4></div><div class="text-sm text-slate-600">${content}</div></div></div>`;
             
+            const createCard = (templateId, title, icon, content) => {
+                const template = document.getElementById(templateId);
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('[data-template="title"]').textContent = title;
+                clone.querySelector('[data-template="icon-container"]').innerHTML = icon;
+                clone.querySelector('[data-template="content"]').innerHTML = content;
+                return clone.firstElementChild.outerHTML;
+            };
+
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = data.situacionAprendizaje || '';
             const situacionTitle = tempDiv.textContent.split('\n')[0] || 'Situación de Aprendizaje sin Título';
@@ -584,7 +628,7 @@
             const fecha = data.fecha ? new Date(data.fecha+'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No especificada';
             const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
             
-            printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><main class="lg:col-span-2">${createCard('Situación de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}${createCard('Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}</main><aside>${createSidebarCard('Información General', icons.info, infoGeneralContent)}${createSidebarCard('Marco Pedagógico', icons.marco, marcoContent)}</aside></div><div class="mt-2">${createCard('Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
+            printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><main class="lg:col-span-2">${createCard('template-print-card', 'Situación de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}${createCard('template-print-card', 'Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}</main><aside>${createCard('template-print-sidebar-card','Información General', icons.info, infoGeneralContent)}${createCard('template-print-sidebar-card','Marco Pedagógico', icons.marco, marcoContent)}</aside></div><div class="mt-2">${createCard('template-print-card','Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('template-print-card','Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('template-print-card','Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
             window.print();
         }
     };
