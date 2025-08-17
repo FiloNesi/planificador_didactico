@@ -414,6 +414,9 @@
             } else if (type === 'contenidosTransversales') {
                 title = 'Seleccionar Contenidos Transversales';
                 options = config.appData.contenidosTransversales;
+            } else if (type === 'unidadDidactica') {
+                title = 'Seleccionar Unidad(es) Didáctica(s)';
+                options = config.appData.unidadesDidacticas;
             }
 
             titleEl.textContent = title;
@@ -628,7 +631,7 @@
             
             const fieldsets = [
                 { step:1, legend: 'Información General', fields:[
-                    { id:'situacionAprendizaje', label:'Sesión de Aprendizaje', type:'textarea' }, { id:'unidadDidactica', label:'Unidad Didáctica', type:'ud-selector' }, { id:'fecha', label:'Fecha', type:'date' }, { id:'materia', label:'Materia', type:'modal-multiselect' }, { id:'curso', label:'Curso', type:'modal-multiselect' }, { id:'sesionNum', label:'Nº de la Sesión', type:'modal-multiselect' },
+                    { id:'situacionAprendizaje', label:'Sesión de Aprendizaje', type:'textarea' }, { id:'unidadDidactica', label:'Unidad Didáctica', type:'modal-multiselect' }, { id:'fecha', label:'Fecha', type:'date' }, { id:'materia', label:'Materia', type:'modal-multiselect' }, { id:'curso', label:'Curso', type:'modal-multiselect' }, { id:'sesionNum', label:'Nº de la Sesión', type:'modal-multiselect' },
                 ]},
                 { step:2, legend: 'Detalles de la Sesión', fields:[
                     { id:'contextoReto', label:'Contexto-reto', type:'textarea' }, { id:'contenidos', label:'Contenidos', type:'textarea' }, { id:'metodologias', label:'Metodologías', type:'textarea' }, { id:'resultadosEsperados', label:'Resultados esperados al final de la sesión', type:'textarea' }, { id:'preparacionPrevia', label:'Preparación previa', type:'textarea' },
@@ -658,17 +661,7 @@
                 
                 fs.fields.forEach(f => {
                     let fieldWrapper;
-                    if (f.type === 'ud-selector') {
-                        fieldWrapper = document.createElement('div');
-                        fieldWrapper.innerHTML = `
-                            <label class="block text-sm font-medium text-slate-700 mb-1">${f.label}</label>
-                            <div class="flex items-center gap-4">
-                                <span id="ud-display" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50 h-10 flex items-center">No seleccionada</span>
-                                <input type="hidden" id="${f.id}" name="${f.id}">
-                                <button type="button" data-modal-trigger="ud" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex-shrink-0">Seleccionar</button>
-                            </div>
-                        `;
-                    } else if (f.type === 'modal-multiselect') {
+                    if (f.type === 'modal-multiselect') {
                         fieldWrapper = document.createElement('div');
                         fieldWrapper.innerHTML = `
                             <label class="block text-sm font-medium text-slate-700 mb-1">${f.label}</label>
@@ -782,11 +775,7 @@
             };
 
             for (const key in data) {
-                if (key === 'unidadDidactica') {
-                    const value = data[key];
-                    document.getElementById('unidadDidactica').value = value || '';
-                    document.getElementById('ud-display').textContent = value ? `Unidad ${value}` : 'No seleccionada';
-                } else if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'].includes(key)) {
+                if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos', 'unidadDidactica'].includes(key)) {
                     const values = parseArrayData(data[key]);
                     document.getElementById(key).value = JSON.stringify(values);
                     ui.updateChipsDisplay(key, values);
@@ -964,8 +953,8 @@
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
             
-            const formFields = ['fecha', 'unidadDidactica', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
-            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'];
+            const formFields = ['fecha', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
+            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos', 'unidadDidactica'];
             const editorFields = config.allEditorIds;
 
             // Get values from simple form fields
