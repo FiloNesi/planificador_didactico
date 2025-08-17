@@ -995,7 +995,7 @@
             });
 
             // Get values from multi-select hidden inputs
-            multiSelectFields.forEach(id => {
+            multiSelectFields.forEach(id => { 
                 if (form.elements[id]) {
                     data[id] = JSON.parse(form.elements[id].value || '[]');
                 }
