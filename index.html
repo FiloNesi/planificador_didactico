@@ -607,9 +607,8 @@
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.add('hidden');
-                document.getElementById('continue-btn-1').classList.remove('hidden');
-                document.getElementById('action-buttons').classList.add('hidden');
-                document.getElementById('info-summary').classList.add('hidden');
+                document.getElementById('form-step-4').classList.add('hidden');
+                document.getElementById('form-step-5').classList.add('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
             }, { once: true });
         },
@@ -887,7 +886,7 @@
 
             document.getElementById('welcome-message').style.display = 'none';
             document.getElementById('session-form').style.display = 'block';
-            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
             document.getElementById('form-step-1').classList.add('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
             document.getElementById('form-step-3').classList.remove('hidden');
@@ -922,7 +921,7 @@
         clearForm() {
             document.getElementById('welcome-message').style.display = 'none';
             document.getElementById('session-form').style.display = 'block';
-            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
             document.getElementById('form-step-1').classList.remove('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
             document.getElementById('form-step-3').classList.add('hidden');
