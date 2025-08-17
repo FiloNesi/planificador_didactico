@@ -917,20 +917,20 @@
 
             document.getElementById('welcome-message').style.display = 'none';
             document.getElementById('session-form').style.display = 'block';
-            document.getElementById('action-buttons').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.add('hidden');
             document.getElementById('form-step-1').classList.add('hidden');
             document.getElementById('form-step-2').classList.add('hidden');
-            document.getElementById('form-step-3').classList.add('hidden');
+            document.getElementById('form-step-3').classList.remove('hidden');
             document.getElementById('form-step-4').classList.add('hidden');
-            document.getElementById('form-step-5').classList.remove('hidden');
+            document.getElementById('form-step-5').classList.add('hidden');
 
             ui.ensureEditorsInitialized(config.allEditorIds);
             state.currentSessionId = sessionId;
 
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = sessionData.situacionAprendizaje || '';
-            const title = tempDiv.textContent.split('\n')[0] || 'Sesión sin título';
-            document.getElementById('form-title').textContent = `Editando: ${title}`;
+            const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
+            document.getElementById('form-title').textContent = 'Paso 3: Actividades';
             document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id === state.currentSessionId); div.classList.toggle('border-blue-500', div.dataset.id === state.currentSessionId); });
 
             const autoSavedDataRaw = localStorage.getItem(`autosave_${sessionId}`);
@@ -982,27 +982,37 @@
         getFormData() {
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
+            
             const formFields = ['fecha', 'unidadDidactica', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
             const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'];
+            const editorFields = config.allEditorIds;
 
-            config.allEditorIds.forEach(id => {
-                if (state.editors[id] && state.editors[id].core) {
-                    data[id] = state.editors[id].getContents(true);
-                } else if (form.elements[id]) {
+            // Get values from simple form fields
+            formFields.forEach(id => {
+                if (form.elements[id]) {
                     data[id] = form.elements[id].value;
                 }
             });
 
-            formFields.forEach(id => { if (form.elements[id]) data[id] = form.elements[id].value; });
-            multiSelectFields.forEach(id => { 
+            // Get values from multi-select hidden inputs
+            multiSelectFields.forEach(id => {
                 if (form.elements[id]) {
                     data[id] = JSON.parse(form.elements[id].value || '[]');
                 }
             });
 
+            // Get values from SunEditor instances
+            editorFields.forEach(id => {
+                if (state.editors[id] && state.editors[id].core) {
+                    data[id] = state.editors[id].getContents(true);
+                }
+            });
+
+            // Get values from checkbox groups
             data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
             data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb => cb.value);
             data.duaGuidelines = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
+            
             return data;
         },
 
@@ -1133,6 +1143,7 @@
             const currentGroup = config.duaData[state.currentDuaPrincipleKey].guidelines.map(g => g.text);
             const other = prev.filter(t => !currentGroup.includes(t));
             document.getElementById('selectedDuaGuidelines').value = JSON.stringify([...other, ...newly]);
+            app.triggerAutoSave();
             ui.hideDuaModal();
         },
 
@@ -1264,7 +1275,7 @@
     // =============================
     // ENTRY POINT
     // =============================
-    document.addEventListener('DOMContentLoaded', app.init); 
+    document.addEventListener('DOMContentLoaded', app.init);
   </script>
 </body>
 </html>
