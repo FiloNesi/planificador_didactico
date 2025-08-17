@@ -606,7 +606,7 @@
             const curso = data.curso || [];
             const sesionNum = data.sesionNum || [];
             const fecha = data.fecha;
-            const formattedDate = fecha ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES') : '<span class="text-slate-400">Sin fecha</span>';
+            const formattedDate = fecha ? new Date(fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : '<span class="text-slate-400">Sin fecha</span>';
 
             const summary = document.getElementById('info-summary') || (() => { const d = document.createElement('div'); d.id = 'info-summary'; d.className = 'hidden mb-4'; document.getElementById('form-step-2')?.prepend(d); return d; })();
             summary.innerHTML = `
@@ -795,13 +795,23 @@
         populateForm(data) {
             const form = document.getElementById('session-form');
             form.reset();
+            
+            const parseArrayData = (value) => {
+                if (Array.isArray(value)) return value;
+                if (typeof value !== 'string' || !value) return [];
+                if (value.startsWith('[') && value.endsWith(']')) {
+                    try { return JSON.parse(value); } catch (e) { /* fall through */ }
+                }
+                return value.split(',');
+            };
+
             for (const key in data) {
                 if (key === 'unidadDidactica') {
                     const value = data[key];
                     document.getElementById('unidadDidactica').value = value || '';
                     document.getElementById('ud-display').textContent = value ? `Unidad ${value}` : 'No seleccionada';
                 } else if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'contenidos'].includes(key)) {
-                    const values = Array.isArray(data[key]) ? data[key] : [];
+                    const values = parseArrayData(data[key]);
                     document.getElementById(key).value = JSON.stringify(values);
                     ui.updateChipsDisplay(key, values);
                 } else if (state.editors[key]) {
@@ -813,25 +823,20 @@
                 } else {
                     const field = form.elements[key];
                     if (field) {
-                        if (field.multiple) {
-                            const values = Array.isArray(data[key]) ? data[key] : [];
-                            for (const opt of field.options) opt.selected = values.includes(opt.value);
+                        if (key === 'fecha' && data[key]) {
+                            field.value = new Date(data[key]).toISOString().split('T')[0];
                         } else {
-                            if (Array.isArray(data[key])) {
-                                field.value = data[key].join('\n');
-                            } else {
-                                field.value = data[key] || '';
-                            }
+                            field.value = data[key] || '';
                         }
                     } else if (key === 'criteriosEvaluacion' || key === 'dua') {
-                        const saved = Array.isArray(data[key]) ? data[key] : [];
+                        const saved = parseArrayData(data[key]);
                         document.querySelectorAll(`input[name="${key}"]`).forEach(cb => {
                             cb.checked = saved.includes(cb.value);
                         });
                     }
                 }
             }
-            document.getElementById('selectedDuaGuidelines').value = JSON.stringify(data.duaGuidelines || '[]');
+            document.getElementById('selectedDuaGuidelines').value = JSON.stringify(parseArrayData(data.duaGuidelines));
             ui.updateDerivedFields();
         },
         
@@ -883,7 +888,7 @@
             const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
             const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createText(data.adaptacion)}`;
             const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? createText(data.observaciones) : `<div class="h-48"></div>`;
-            const fecha = data.fecha ? new Date(data.fecha+'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No especificada';
+            const fecha = data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : 'No especificada';
             const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
             
             printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header>${createCard('template-print-card', 'Sesión de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">${createCard('template-print-sidebar-card','Información General', icons.info, infoGeneralContent)}${createCard('template-print-sidebar-card','Marco Pedagógico', icons.marco, marcoContent)}</div>${createCard('template-print-card', 'Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}<div class="mt-2">${createCard('template-print-card','Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('template-print-card','Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('template-print-card','Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
