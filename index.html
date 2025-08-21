@@ -22,15 +22,16 @@
     .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    /* --- ESTILOS PARA LA NAVEGACIÓN POR PASOS --- */
-    #step-navigator .step-item { transition: all 0.2s ease-in-out; }
-    #step-navigator .step-icon { transition: all 0.2s ease-in-out; }
-    #step-navigator .step-item.step-active .step-icon { background-color: #4f46e5; border-color: #4f46e5; color: white; }
-    #step-navigator .step-item.step-active .step-title { color: #4f46e5; font-weight: 600; }
-    #step-navigator .step-item.step-completed { cursor: pointer; }
-    #step-navigator .step-item.step-completed .step-icon { background-color: #16a34a; border-color: #16a34a; color: white; }
-    #step-navigator .step-item.step-completed:hover .step-title { color: #1e293b; }
-    #step-navigator .step-item.step-disabled { cursor: not-allowed; opacity: 0.6; }
+    /* --- ESTILOS PARA LA NAVEGACIÓN POR PASOS (AHORA HORIZONTAL) --- */
+    #step-navigator .step-item { transition: all 0.2s ease-in-out; border-bottom: 3px solid transparent; }
+    #step-navigator .step-item .step-icon { transition: all 0.2s ease-in-out; background-color: #e2e8f0; color: #475569; }
+    #step-navigator .step-item.step-active { border-bottom-color: #4f46e5; }
+    #step-navigator .step-item.step-active .step-icon { background-color: #4f46e5; color: white; }
+    #step-navigator .step-item.step-active .step-title { color: #4f46e5; }
+    #step-navigator .step-item.step-completed { cursor: pointer; }
+    #step-navigator .step-item.step-completed .step-icon { background-color: #16a34a; color: white; }
+    #step-navigator .step-item.step-completed:hover { border-bottom-color: #dcfce7; }
+    #step-navigator .step-item.step-disabled { cursor: not-allowed; opacity: 0.5; }
 
     /* --- ESTILOS PARA EL CALENDARIO DEL DASHBOARD --- */
     .vanilla-js-calendar { width: 100%; box-shadow: none; border: 1px solid #e2e8f0; }
@@ -57,11 +58,11 @@
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
-    <div id="app-container" class="flex flex-col h-screen">
+  <div id="app-container" class="flex flex-col h-screen">
     <header class="bg-white shadow-md p-3 flex justify-between items-center no-print flex-shrink-0">
       <h1 class="text-xl font-bold text-slate-700">Planificador Didáctico</h1>
     </header>
-        <main class="flex-grow flex flex-col md:flex-row gap-3 p-3 overflow-hidden no-print">
+    <main class="flex-grow flex flex-col md:flex-row gap-3 p-3 overflow-hidden no-print">
       <aside class="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center gap-2">
           <h2 class="text-lg font-semibold">Sesiones</h2>
@@ -74,60 +75,60 @@
         </div>
         <div id="session-list" class="overflow-y-auto flex-grow p-2"></div>
       </aside>
-      <section class="w-full md:w-2/3 lg:w-3/4 flex bg-white rounded-lg shadow-md overflow-hidden">
-        <div id="form-wrapper" class="w-full flex-row hidden">
-            <nav id="step-navigator" class="w-64 border-r border-slate-200 p-6 bg-slate-50 flex-shrink-0">
-                <ol>
-                    <li data-step="1" class="step-item mb-6"><div class="flex items-center"><span class="step-icon flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-400 text-slate-500 font-bold">1</span><span class="step-title ml-3 font-medium text-slate-600">Información</span></div></li>
-                    <li data-step="2" class="step-item mb-6"><div class="flex items-center"><span class="step-icon flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-400 text-slate-500 font-bold">2</span><span class="step-title ml-3 font-medium text-slate-600">Detalles</span></div></li>
-                    <li data-step="3" class="step-item mb-6"><div class="flex items-center"><span class="step-icon flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-400 text-slate-500 font-bold">3</span><span class="step-title ml-3 font-medium text-slate-600">Actividades</span></div></li>
-                    <li data-step="4" class="step-item mb-6"><div class="flex items-center"><span class="step-icon flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-400 text-slate-500 font-bold">4</span><span class="step-title ml-3 font-medium text-slate-600">Evaluación</span></div></li>
-                    <li data-step="5" class="step-item"><div class="flex items-center"><span class="step-icon flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-400 text-slate-500 font-bold">5</span><span class="step-title ml-3 font-medium text-slate-600">Marco y DUA</span></div></li>
-                </ol>
-            </nav>
-            <div class="flex-grow flex flex-col overflow-hidden">
-                <div id="form-header" class="p-3 border-b flex justify-between items-center flex-wrap gap-2 flex-shrink-0">
-                    <h2 id="form-title" class="text-lg font-semibold">Selecciona una sesión o crea una nueva</h2>
-                    <div class="flex items-center gap-2">
-                        <span id="autosave-status" class="text-sm text-slate-500 transition-opacity duration-300 opacity-0"></span>
-                        <div id="action-buttons" class="flex gap-2 hidden">
-                            <button id="save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Guardar</button>
-                            <button id="duplicate-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Duplicar</button>
-                            <button id="export-calendar-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
-                                Exportar</button>
-                            <button id="print-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Imprimir</button>
-                            <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Eliminar</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="form-container" class="overflow-y-auto flex-grow p-4">
-                    <form id="session-form" class="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4"></form>
-                </div>
-            </div>
-        </div>
-        <div id="welcome-message" class="w-full p-6 md:p-8 overflow-y-auto">
-            <h2 class="text-2xl font-bold text-slate-800">Bienvenido a tu Planificador</h2>
-            <p class="mt-1 text-slate-500">Organiza tus clases, gestiona tus sesiones y enfócate en lo que más importa: enseñar.</p>
-            <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2">
-                    <button id="dashboard-new-session-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-lg flex items-center justify-center transition-transform hover:scale-105">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                        Crear Nueva Sesión
-                    </button>
-                    <div class="mt-8">
-                        <h3 class="text-lg font-semibold text-slate-700">Acceso Rápido</h3>
-                        <p class="text-sm text-slate-500 mb-4">Continúa donde lo dejaste.</p>
-                        <div id="recent-sessions-container" class="space-y-3"></div>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-700">Calendario de Sesiones</h3>
-                    <p class="text-sm text-slate-500 mb-4">Tus clases planificadas de un vistazo.</p>
-                    <div id="calendar-container"></div>
-                </div>
-            </div>
-        </div>
+      <section class="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
+        <div id="top-bar-container" class="p-3 border-b items-center flex-wrap gap-4 flex-shrink-0 hidden">
+            <nav id="step-navigator" class="flex-grow">
+                <ol class="flex gap-2 md:gap-4 items-center">
+                    <li data-step="1" class="step-item p-2 flex-1"><div class="flex items-center justify-center gap-2"><span class="step-icon flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm flex-shrink-0">1</span><span class="step-title font-medium text-slate-600 text-sm hidden md:inline">Información</span></div></li>
+                    <li data-step="2" class="step-item p-2 flex-1"><div class="flex items-center justify-center gap-2"><span class="step-icon flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm flex-shrink-0">2</span><span class="step-title font-medium text-slate-600 text-sm hidden md:inline">Detalles</span></div></li>
+                    <li data-step="3" class="step-item p-2 flex-1"><div class="flex items-center justify-center gap-2"><span class="step-icon flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm flex-shrink-0">3</span><span class="step-title font-medium text-slate-600 text-sm hidden md:inline">Actividades</span></div></li>
+                    <li data-step="4" class="step-item p-2 flex-1"><div class="flex items-center justify-center gap-2"><span class="step-icon flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm flex-shrink-0">4</span><span class="step-title font-medium text-slate-600 text-sm hidden md:inline">Evaluación</span></div></li>
+                    <li data-step="5" class="step-item p-2 flex-1"><div class="flex items-center justify-center gap-2"><span class="step-icon flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm flex-shrink-0">5</span><span class="step-title font-medium text-slate-600 text-sm hidden md:inline">Marco y DUA</span></div></li>
+                </ol>
+            </nav>
+            <div id="action-buttons" class="flex gap-2 flex-shrink-0">
+                <button id="save-btn" title="Guardar" class="bg-green-500 hover:bg-green-600 text-white font-bold p-2 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 10-2 0v5.586L7.707 10.293zM17 8a1 1 0 011 1v8a2 2 0 01-2 2H4a2 2 0 01-2-2V9a1 1 0 011-1h3V5a3 3 0 116 0v3h3zM11 5a1 1 0 10-2 0v3h2V5z" /></svg></button>
+                <button id="duplicate-btn" title="Duplicar" class="bg-amber-500 hover:bg-amber-600 text-white font-bold p-2 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" /></svg></button>
+                <button id="export-calendar-btn" title="Exportar a Calendario" class="bg-teal-500 hover:bg-teal-600 text-white font-bold p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg></button>
+                <button id="print-btn" title="Imprimir" class="bg-sky-500 hover:bg-sky-600 text-white font-bold p-2 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h8a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg></button>
+                <button id="delete-btn" title="Eliminar" class="bg-red-500 hover:bg-red-600 text-white font-bold p-2 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+            </div>
+        </div>
+
+        <div id="main-scroll-area" class="flex-grow overflow-y-auto">
+            <div id="welcome-message" class="w-full p-6 md:p-8">
+                <h2 class="text-2xl font-bold text-slate-800">Bienvenido a tu Planificador</h2>
+                <p class="mt-1 text-slate-500">Organiza tus clases, gestiona tus sesiones y enfócate en lo que más importa: enseñar.</p>
+                <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <button id="dashboard-new-session-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg text-lg flex items-center justify-center transition-transform hover:scale-105">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Crear Nueva Sesión
+                        </button>
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold text-slate-700">Acceso Rápido</h3>
+                            <p class="text-sm text-slate-500 mb-4">Continúa donde lo dejaste.</p>
+                            <div id="recent-sessions-container" class="space-y-3"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700">Calendario de Sesiones</h3>
+                        <p class="text-sm text-slate-500 mb-4">Tus clases planificadas de un vistazo.</p>
+                        <div id="calendar-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="form-wrapper" class="hidden">
+                <div class="p-4 border-b border-t flex justify-between items-center">
+                    <h2 id="form-title" class="text-lg font-semibold"></h2>
+                    <span id="autosave-status" class="text-sm text-slate-500 transition-opacity duration-300 opacity-0"></span>
+                </div>
+                <div id="form-container" class="p-4">
+                    <form id="session-form" class="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4"></form>
+                </div>
+            </div>
+        </div>
       </section>
     </main>
   </div>
@@ -138,7 +139,9 @@
 
   <script type="module">
     // Resto del código...
-    // FIX: El único cambio real está en la función navigateToStep
+    // FIX: Se han modificado las funciones que controlan la visibilidad de los elementos
+    // y la función de navegación para que el scroll funcione en el nuevo contenedor.
+    
     // =============================
     // MODULES (config, state, api, bank, calendar, ui, app)
     // =============================
@@ -150,9 +153,7 @@
     const ui = { /* ... No cambia ... */ };
 
     const app = {
-        // ... (Otras funciones de app no cambian) ...
-        
-        async loadSessions() { /* ... No cambia ... */ },
+        // ... (Funciones no modificadas omitidas por brevedad)
 
         navigateToStep(step) {
             if (step > state.maxStepReached) return;
@@ -174,19 +175,74 @@
 
             document.getElementById('form-title').textContent = config.formStepTitles[step - 1];
             ui.updateStepNavigator();
-
-            // FIX: Línea clave para reiniciar el scroll
-            document.getElementById('form-container').scrollTop = 0;
+            document.getElementById('main-scroll-area').scrollTop = 0;
         },
 
-        // ... (El resto de las funciones de app no cambian) ...
-        
-        // El resto del JS va aquí...
-        // Para brevedad, no lo repito todo, pero en tu archivo debe estar completo.
-        // La única función modificada es la de arriba (navigateToStep).
+        displaySession(sessionId) {
+            const sessionData = state.allSessions.find(s => s.id === sessionId);
+            if (!sessionData) return;
+
+            // Mostrar/ocultar los contenedores correctos
+            document.getElementById('welcome-message').classList.add('hidden');
+            document.getElementById('top-bar-container').classList.remove('hidden');
+            document.getElementById('top-bar-container').classList.add('flex');
+            document.getElementById('form-wrapper').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+            
+            ui.ensureEditorsInitialized(config.allEditorIds);
+            state.currentSessionId = sessionId;
+            state.maxStepReached = 5;
+            document.querySelectorAll('#session-list > div').forEach(div => {
+                div.classList.toggle('bg-blue-100', div.dataset.id === state.currentSessionId);
+                div.classList.toggle('border-blue-500', div.dataset.id === state.currentSessionId);
+            });
+            document.getElementById('export-calendar-btn').disabled = !sessionData.fecha;
+            const autoSavedDataRaw = localStorage.getItem(`autosave_${sessionId}`);
+            if (autoSavedDataRaw) {
+                const autoSavedData = JSON.parse(autoSavedDataRaw);
+                ui.showModal('Restaurar Sesión', 'Se han encontrado datos autoguardados para esta sesión. ¿Quieres restaurarlos?', {
+                    buttons: [
+                        { text: 'No, usar versión guardada', class: 'bg-slate-500', callback: () => { ui.populateForm(sessionData); app.navigateToStep(1); } },
+                        { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => { ui.populateForm(autoSavedData); app.navigateToStep(1); } }
+                    ]
+                });
+            } else {
+                ui.populateForm(sessionData);
+                app.navigateToStep(1);
+            }
+        },
+
+        clearForm() {
+            document.getElementById('welcome-message').classList.add('hidden');
+            document.getElementById('top-bar-container').classList.remove('hidden');
+            document.getElementById('top-bar-container').classList.add('flex');
+            document.getElementById('form-wrapper').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+
+            state.currentSessionId = null;
+            state.maxStepReached = 1;
+            document.getElementById('export-calendar-btn').disabled = true;
+            ui.ensureEditorsInitialized(config.allEditorIds);
+            document.querySelectorAll('#session-list > div').forEach(div => div.classList.remove('bg-blue-100', 'border-blue-500'));
+            const autoSavedDataRaw = localStorage.getItem('autosave_new');
+            if (autoSavedDataRaw) {
+                const autoSavedData = JSON.parse(autoSavedDataRaw);
+                ui.showModal('Restaurar Borrador', 'Se ha encontrado un borrador no guardado. ¿Quieres restaurarlo?', {
+                    buttons: [
+                        { text: 'No, empezar de cero', class: 'bg-slate-500', callback: () => { localStorage.removeItem('autosave_new'); ui.populateForm({}); app.navigateToStep(1); } },
+                        { text: 'Sí, restaurar', class: 'bg-blue-500', callback: () => { ui.populateForm(autoSavedData); app.navigateToStep(1); } }
+                    ]
+                });
+            } else {
+                ui.populateForm({});
+                app.navigateToStep(1);
+            }
+        },
+
+        // ... (El resto de funciones se pegaría aquí)
     };
 
-    // Pega aquí el resto de tu código JS (módulos, etc.) para que todo funcione
+    // Pega aquí el resto de tu código JS para que todo funcione
     // Si reemplazas el archivo entero, ya estará todo incluido.
   </script>
 </body>
