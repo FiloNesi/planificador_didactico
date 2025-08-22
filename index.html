@@ -220,6 +220,8 @@
     // =============================
     const config = {
         SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyIClBck1KBGo7S4K3Hop1rkmSBNXjfP6MZ8Rsu714E_PIlNiZuimJfkH_j95HGKmSIZQ/exec",
+        API_TIMEOUT: 10000,
+        API_RETRIES: 3,
         evaluationData: [
             { id: "1.1", text: "1.1 Autoconcepto personal y moral a través del diálogo sobre la naturaleza humana.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
             { id: "1.2", text: "1.2 Expresión y gestión empática de emociones, ideas y relaciones.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
@@ -300,21 +302,33 @@
     // =============================
     const api = {
         async call(action, data = {}) {
-            const res = await fetch(config.SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                body: JSON.stringify({ action, ...data })
-            });
-            if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
-            const text = await res.text();
-            let result;
-            try {
-                result = JSON.parse(text);
-            } catch {
-                throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
+            for (let attempt = 1; attempt <= config.API_RETRIES; attempt++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), config.API_TIMEOUT);
+                try {
+                    const res = await fetch(config.SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action, ...data }),
+                        signal: controller.signal
+                    });
+                    if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
+                    const text = await res.text();
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch {
+                        throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
+                    }
+                    if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
+                    return result.data;
+                } catch (err) {
+                    if (attempt === config.API_RETRIES) throw err;
+                    await new Promise(r => setTimeout(r, 500 * attempt));
+                } finally {
+                    clearTimeout(timeoutId);
+                }
             }
-            if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
-            return result.data;
         }
     };
 
