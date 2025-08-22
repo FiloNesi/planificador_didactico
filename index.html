@@ -362,7 +362,34 @@
             state.currentDuaPrincipleKey = null;
             document.getElementById('dua-modal').classList.add('hidden');
         },
-        
+
+        showUdModal() {
+            const content = document.getElementById('ud-modal-content');
+            content.innerHTML = '';
+            const current = JSON.parse(document.getElementById('unidadDidactica').value || '[]');
+
+            config.appData.unidadesDidacticas.forEach((ud, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = idx + 1;
+                const selected = current.includes(ud);
+                btn.className = `w-10 h-10 flex items-center justify-center rounded-full border transition-colors ${selected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-500 hover:text-white'}`;
+                btn.addEventListener('click', () => {
+                    document.getElementById('unidadDidactica').value = JSON.stringify([ud]);
+                    ui.updateChipsDisplay('unidadDidactica', [ud]);
+                    app.triggerAutoSave();
+                    ui.hideUdModal();
+                });
+                content.appendChild(btn);
+            });
+
+            document.getElementById('ud-modal').classList.remove('hidden');
+        },
+
+        hideUdModal() {
+            document.getElementById('ud-modal').classList.add('hidden');
+            document.getElementById('ud-modal-content').innerHTML = '';
+        },
+
         showMultiSelectModal(type) {
             state.currentMultiSelect = type;
             const modal = document.getElementById('multi-select-modal');
