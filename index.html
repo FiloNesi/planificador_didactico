@@ -549,7 +549,7 @@
                         <div><div class="text-xs uppercase text-slate-500">Fecha</div><div class="text-sm text-slate-800">${formattedDate}</div></div>
                     </div>
                 </div>`;
-            summary.classList.remove('hidden');
+            
             document.getElementById('edit-info-btn')?.addEventListener('click', () => {
                 summary.classList.add('hidden');
                 document.getElementById('form-step-1').classList.remove('hidden');
@@ -685,12 +685,23 @@
             const sessionList = document.getElementById('session-list');
             const template = document.getElementById('template-session-item');
             sessionList.innerHTML = '';
-            if (!sessionsToRender.length) {
+
+            // Sort the incoming list of sessions to ensure we always work with the most recent ones first.
+            sessionsToRender.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            // Determine if we are showing the default list (all sessions) or a filtered list from a search.
+            const isDefaultView = sessionsToRender === state.allSessions;
+
+            // If it's the default view, only take the 5 most recent sessions.
+            // If it's a search result, show all matching sessions.
+            const sessionsToDisplay = isDefaultView ? sessionsToRender.slice(0, 5) : sessionsToRender;
+
+            if (!sessionsToDisplay.length) {
                 sessionList.innerHTML = '<p class="text-center text-slate-500 p-4">No se encontraron sesiones.</p>';
                 return;
             }
-            sessionsToRender.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            sessionsToRender.forEach(session => {
+
+            sessionsToDisplay.forEach(session => {
                 const clone = template.content.cloneNode(true);
                 const div = clone.querySelector('div');
                 const title = (session.situacionAprendizaje || '').split('\n')[0] || 'Sin título';
@@ -1091,6 +1102,7 @@
             
             document.getElementById('continue-btn-1').addEventListener('click', () => {
                 ui.renderInfoSummary();
+                document.getElementById('info-summary').classList.remove('hidden');
                 document.getElementById('form-step-1').classList.add('hidden');
                 document.getElementById('form-step-2').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 2: Detalles de la Sesión';
@@ -1098,6 +1110,7 @@
             
             document.getElementById('continue-btn-2').addEventListener('click', () => {
                 ui.renderInfoSummary();
+                document.getElementById('info-summary').classList.remove('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 3: Actividades';
@@ -1105,6 +1118,7 @@
             
             document.getElementById('continue-btn-3').addEventListener('click', () => {
                 ui.renderInfoSummary();
+                document.getElementById('info-summary').classList.remove('hidden');
                 document.getElementById('form-step-3').classList.add('hidden');
                 document.getElementById('form-step-4').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 4: Evaluación';
@@ -1112,6 +1126,7 @@
 
             document.getElementById('continue-btn-4').addEventListener('click', () => {
                 ui.renderInfoSummary();
+                document.getElementById('info-summary').classList.remove('hidden');
                 document.getElementById('form-step-4').classList.add('hidden');
                 document.getElementById('form-step-5').classList.remove('hidden');
                 document.getElementById('action-buttons').classList.remove('hidden');
