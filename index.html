@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planificador Didáctico de Filosofía</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.2/dist/purify.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 8px; }
@@ -80,7 +78,7 @@
           </div>
         </div>
         <div id="form-container" class="overflow-y-auto flex-grow p-4">
-          <form id="session-form" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4"></form>
+          <form id="session-form" class="hidden"></form>
           <div id="welcome-message" class="text-center text-slate-500 p-8">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <p class="mt-4 text-lg">Haz clic en "Nueva" para empezar a planificar tu primera sesión.</p>
@@ -212,16 +210,12 @@
     </div>
   </template>
 
-  <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-
   <script type="module">
     // =============================
     // MODULE: CONFIG
     // =============================
     const config = {
         SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyIClBck1KBGo7S4K3Hop1rkmSBNXjfP6MZ8Rsu714E_PIlNiZuimJfkH_j95HGKmSIZQ/exec",
-        API_TIMEOUT: 10000,
-        API_RETRIES: 3,
         evaluationData: [
             { id: "1.1", text: "1.1 Autoconcepto personal y moral a través del diálogo sobre la naturaleza humana.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
             { id: "1.2", text: "1.2 Expresión y gestión empática de emociones, ideas y relaciones.", cesp: "CESP1", descriptores: ["CCL2", "CPSAA1", "CC1", "CC2", "CC3"], claves: ["CCL", "CPSAA", "CC"] },
@@ -281,8 +275,7 @@
             sesiones: Array.from({length:15},(_,i)=>`Sesión ${i+1}`),
             tiposEvaluacion: ["Formativa", "Competencial", "Sumativa", "Heteroevaluación", "Autoevaluación", "Coevaluación"],
             unidadesDidacticas: Array.from({length:15},(_,i)=>`Unidad ${i+1}`)
-        },
-        allEditorIds: ['situacionAprendizaje', 'contenidosTransversales', 'contextoReto', 'contenidos', 'metodologias', 'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 'observaciones', 'adaptacion', 'criteriosCalificacion']
+        }
     };
 
     // =============================
@@ -293,7 +286,6 @@
         currentDuaPrincipleKey: null,
         allSessions: [],
         autoSaveTimer: null,
-        editors: {},
         currentMultiSelect: null
     };
 
@@ -302,33 +294,21 @@
     // =============================
     const api = {
         async call(action, data = {}) {
-            for (let attempt = 1; attempt <= config.API_RETRIES; attempt++) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), config.API_TIMEOUT);
-                try {
-                    const res = await fetch(config.SCRIPT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action, ...data }),
-                        signal: controller.signal
-                    });
-                    if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
-                    const text = await res.text();
-                    let result;
-                    try {
-                        result = JSON.parse(text);
-                    } catch {
-                        throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
-                    }
-                    if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
-                    return result.data;
-                } catch (err) {
-                    if (attempt === config.API_RETRIES) throw err;
-                    await new Promise(r => setTimeout(r, 500 * attempt));
-                } finally {
-                    clearTimeout(timeoutId);
-                }
+            const res = await fetch(config.SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: JSON.stringify({ action, ...data })
+            });
+            if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
+            const text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch {
+                throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
             }
+            if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
+            return result.data;
         }
     };
 
@@ -377,34 +357,7 @@
             state.currentDuaPrincipleKey = null;
             document.getElementById('dua-modal').classList.add('hidden');
         },
-
-        showUdModal() {
-            const content = document.getElementById('ud-modal-content');
-            content.innerHTML = '';
-            const current = JSON.parse(document.getElementById('unidadDidactica').value || '[]');
-
-            config.appData.unidadesDidacticas.forEach((ud, idx) => {
-                const btn = document.createElement('button');
-                btn.textContent = idx + 1;
-                const selected = current.includes(ud);
-                btn.className = `w-10 h-10 flex items-center justify-center rounded-full border transition-colors ${selected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-500 hover:text-white'}`;
-                btn.addEventListener('click', () => {
-                    document.getElementById('unidadDidactica').value = JSON.stringify([ud]);
-                    ui.updateChipsDisplay('unidadDidactica', [ud]);
-                    app.triggerAutoSave();
-                    ui.hideUdModal();
-                });
-                content.appendChild(btn);
-            });
-
-            document.getElementById('ud-modal').classList.remove('hidden');
-        },
-
-        hideUdModal() {
-            document.getElementById('ud-modal').classList.add('hidden');
-            document.getElementById('ud-modal-content').innerHTML = '';
-        },
-
+        
         showMultiSelectModal(type) {
             state.currentMultiSelect = type;
             const modal = document.getElementById('multi-select-modal');
@@ -427,6 +380,9 @@
             } else if (type === 'tiposEvaluacion') {
                 title = 'Seleccionar Tipos de Evaluación';
                 options = config.appData.tiposEvaluacion;
+            } else if (type === 'contenidosTransversales') {
+                title = 'Seleccionar Contenidos Transversales';
+                options = config.appData.contenidosTransversales;
             } else if (type === 'unidadDidactica') {
                 title = 'Seleccionar Unidad(es) Didáctica(s)';
                 options = config.appData.unidadesDidacticas;
@@ -439,7 +395,7 @@
                 const wrapper = document.createElement('div');
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
-                cb.id = `ms-${type}-${opt.substring(0, 20)}`; // Use a substring for unique ID
+                cb.id = `ms-${type}-${opt.replace(/\s+/g, '-')}`; // Create a safe ID
                 cb.value = opt;
                 cb.checked = currentValues.includes(opt);
                 cb.className = 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500';
@@ -509,7 +465,8 @@
             let field;
             if (type === 'textarea') {
                 field = document.createElement('textarea');
-                field.className = 'hidden';
+                field.rows = 4;
+                field.className = 'w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500';
                 wrapper.appendChild(field);
             } else if (type === 'date') {
                 field = document.createElement('input');
@@ -557,29 +514,6 @@
             return wrapper;
         },
 
-        ensureEditorsInitialized(ids) {
-            ids.forEach(id => {
-                const textarea = document.getElementById(id);
-                if (textarea && !state.editors[id]) {
-                    state.editors[id] = SUNEDITOR.create(id, {
-                        buttonList: [['undo', 'redo'], ['bold', 'italic', 'underline'], ['list']],
-                        height: 'auto',
-                        minHeight: '100px',
-                        callbacks: { onChange: app.triggerAutoSave }
-                    });
-                }
-            });
-        },
-
-        destroyEditors() {
-            Object.values(state.editors).forEach(editor => {
-                if (editor && typeof editor.destroy === 'function') {
-                    editor.destroy();
-                }
-            });
-            state.editors = {};
-        },
-
         updateDerivedFields() {
             const selected = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
             const allCesp = new Set(), allDes = new Set(), allClaves = new Set();
@@ -591,17 +525,17 @@
 
         renderInfoSummary() {
             const data = app.getFormData();
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = DOMPurify.sanitize(data.situacionAprendizaje || '');
-            const title = tempDiv.textContent.split('\n')[0] || 'Sesión sin título';
+            const title = (data.situacionAprendizaje || '').split('\n')[0] || 'Sesión sin título';
             const materia = data.materia || [];
             const curso = data.curso || [];
             const sesionNum = data.sesionNum || [];
             const fecha = data.fecha;
             const formattedDate = fecha ? new Date(fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : '<span class="text-slate-400">Sin fecha</span>';
 
-            const summary = document.getElementById('info-summary') || (() => { const d = document.createElement('div'); d.id = 'info-summary'; d.className = 'hidden mb-4'; document.getElementById('form-step-2')?.prepend(d); return d; })();
-            const summaryHtml = `
+            const summary = document.getElementById('info-summary');
+            if (!summary) return;
+            
+            summary.innerHTML = `
                 <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Información general</h3>
@@ -615,27 +549,32 @@
                         <div><div class="text-xs uppercase text-slate-500">Fecha</div><div class="text-sm text-slate-800">${formattedDate}</div></div>
                     </div>
                 </div>`;
-            summary.innerHTML = DOMPurify.sanitize(summaryHtml);
             summary.classList.remove('hidden');
             document.getElementById('edit-info-btn')?.addEventListener('click', () => {
+                summary.classList.add('hidden');
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.add('hidden');
                 document.getElementById('form-step-4').classList.add('hidden');
                 document.getElementById('form-step-5').classList.add('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
-            }, { once: true });
+            });
         },
 
         chipsHtml(arr) {
             const a = Array.isArray(arr) ? arr : [];
-            return a.length ? a.map(v => `<span class="inline-block text-xs bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 mr-1 mb-1">${DOMPurify.sanitize(String(v))}</span>`).join('') : '<span class="text-slate-400 text-sm">Sin seleccionar</span>';
+            return a.length ? a.map(v => `<span class="inline-block text-xs bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 mr-1 mb-1">${String(v)}</span>`).join('') : '<span class="text-slate-400 text-sm">Sin seleccionar</span>';
         },
 
         buildForm() {
-            ui.destroyEditors();
             const form = document.getElementById('session-form');
             form.innerHTML = '';
+
+            const infoSummary = document.createElement('div');
+            infoSummary.id = 'info-summary';
+            infoSummary.className = 'hidden mb-4';
+            form.appendChild(infoSummary);
+
             const step1 = document.createElement('div'); step1.id = 'form-step-1'; step1.className = 'space-y-6';
             const step2 = document.createElement('div'); step2.id = 'form-step-2'; step2.className = 'hidden space-y-6';
             const step3 = document.createElement('div'); step3.id = 'form-step-3'; step3.className = 'hidden space-y-6';
@@ -733,18 +672,13 @@
             navStep5.appendChild(backBtn5);
             step5.appendChild(navStep5);
 
-            const infoSummary = document.createElement('div'); infoSummary.id = 'info-summary'; infoSummary.className = 'hidden mb-4'; 
-            step2.prepend(infoSummary.cloneNode(true));
-            step3.prepend(infoSummary.cloneNode(true));
-            step4.prepend(infoSummary.cloneNode(true));
-            step5.prepend(infoSummary.cloneNode(true));
-
             form.appendChild(step1); 
             form.appendChild(step2);
             form.appendChild(step3);
             form.appendChild(step4);
             form.appendChild(step5);
             form.addEventListener('change', (e) => { if (e.target.name === 'criteriosEvaluacion') ui.updateDerivedFields(); app.triggerAutoSave(); });
+            form.addEventListener('input', app.triggerAutoSave);
         },
 
         renderSessionList(sessionsToRender = state.allSessions) {
@@ -759,9 +693,7 @@
             sessionsToRender.forEach(session => {
                 const clone = template.content.cloneNode(true);
                 const div = clone.querySelector('div');
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = DOMPurify.sanitize(session.situacionAprendizaje || '');
-                const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
+                const title = (session.situacionAprendizaje || '').split('\n')[0] || 'Sin título';
                 const subtitle = `${session.materia?.[0] || 'Sin materia'} - ${session.curso?.[0] || 'Sin curso'}`;
                 
                 div.dataset.id = session.id;
@@ -788,23 +720,21 @@
             };
 
             for (const key in data) {
-                if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'unidadDidactica'].includes(key)) {
+                if (['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'unidadDidactica'].includes(key)) {
                     const values = parseArrayData(data[key]);
                     document.getElementById(key).value = JSON.stringify(values);
                     ui.updateChipsDisplay(key, values);
-                } else if (state.editors[key]) {
-                    let content = data[key] || '';
-                    if (Array.isArray(content)) {
-                        content = content.join('<br>');
-                    }
-                    state.editors[key].setContents(String(content));
                 } else {
                     const field = form.elements[key];
                     if (field) {
                         if (key === 'fecha' && data[key]) {
                             field.value = new Date(data[key]).toISOString().split('T')[0];
                         } else {
-                            field.value = data[key] || '';
+                            let content = data[key] || '';
+                            if (Array.isArray(content)) {
+                               content = content.join('\n');
+                            }
+                            field.value = content;
                         }
                     } else if (key === 'criteriosEvaluacion' || key === 'dua') {
                         const saved = parseArrayData(data[key]);
@@ -837,12 +767,12 @@
                 info: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>'),
                 observaciones: createIcon('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>')
             };
-            const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${DOMPurify.sanitize(String(i))}</li>`).join('')}</ul>`;
+            const createList = (items) => !items || items.length === 0 ? '<p class="text-slate-500 italic mt-2">No especificado</p>' : `<ul class="list-disc list-inside space-y-1 mt-2 pl-2">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
             const createText = (content) => {
-                const strContent = DOMPurify.sanitize(String(content || ''));
-                return !strContent || strContent.trim() === '' || strContent.trim() === '<p><br></p>'
+                const strContent = String(content || '');
+                return !strContent || strContent.trim() === ''
                     ? '<p class="text-slate-500 italic mt-2">No especificado</p>'
-                    : `<div class="prose prose-sm max-w-none mt-2">${strContent}</div>`;
+                    : `<div class="prose prose-sm max-w-none mt-2" style="white-space: pre-wrap;">${strContent}</div>`;
             };
             
             const createCard = (templateId, title, icon, content) => {
@@ -851,16 +781,14 @@
                 const clone = template.content.cloneNode(true);
                 clone.querySelector('[data-template="title"]').textContent = title;
                 clone.querySelector('[data-template="icon-container"]').innerHTML = icon;
-                clone.querySelector('[data-template="content"]').innerHTML = DOMPurify.sanitize(content);
+                clone.querySelector('[data-template="content"]').innerHTML = content;
                 return clone.firstElementChild.outerHTML;
             };
 
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = DOMPurify.sanitize(data.situacionAprendizaje || '');
-            const situacionTitle = tempDiv.textContent.split('\n')[0] || 'Situación de Aprendizaje sin Título';
-            const situacionBody = DOMPurify.sanitize(data.situacionAprendizaje || '');
+            const situacionTitle = (data.situacionAprendizaje || '').split('\n')[0] || 'Situación de Aprendizaje sin Título';
+            const situacionBody = createText(data.situacionAprendizaje);
 
-            const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act && act.trim() !== '<p><br></p>' ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
+            const actividadesContent = [data.actividad1, data.actividad2, data.actividad3, data.actividad4].map((act, i) => act && act.trim() !== '' ? `<div><strong class="font-semibold text-slate-700">Actividad ${i + 1}:</strong>${createText(act)}</div>` : '').filter(Boolean).join('<hr class="my-4 border-slate-200">');
             const evaluacionContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><strong class="font-semibold text-slate-700">Criterios de Evaluación:</strong>${createList(data.criteriosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Instrumentos:</strong>${createText(data.instrumentosEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Tipos de Evaluación:</strong>${createList(data.tiposEvaluacion)}</div><div><strong class="font-semibold text-slate-700">Criterios de Calificación:</strong>${createText(data.criteriosCalificacion)}</div><div class="md:col-span-2"><strong class="font-semibold text-slate-700">Recursos:</strong>${createText(data.recursos)}</div></div>`;
             const marcoContent = `<strong class="font-semibold text-slate-700">Competencia Específica:</strong>${createText(data.competenciaEspecifica)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Descriptores Operativos:</strong>${createText(data.descriptoresOperativos)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Competencias Clave:</strong>${createText(data.competenciasClave)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Contenidos Transversales:</strong>${createText(data.contenidosTransversales)}`;
             const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
@@ -869,8 +797,7 @@
             const fecha = data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : 'No especificada';
             const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
             
-            const reportHtml = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header>${createCard('template-print-card', 'Sesión de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">${createCard('template-print-sidebar-card','Información General', icons.info, infoGeneralContent)}${createCard('template-print-sidebar-card','Marco Pedagógico', icons.marco, marcoContent)}</div>${createCard('template-print-card', 'Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}<div class="mt-2">${createCard('template-print-card','Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('template-print-card','Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('template-print-card','Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
-            printArea.innerHTML = DOMPurify.sanitize(reportHtml, {ADD_TAGS: ['svg','path'], ADD_ATTR: ['d','fill','viewBox','stroke','stroke-linecap','stroke-linejoin','stroke-width','xmlns']});
+            printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header>${createCard('template-print-card', 'Sesión de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">${createCard('template-print-sidebar-card','Información General', icons.info, infoGeneralContent)}${createCard('template-print-sidebar-card','Marco Pedagógico', icons.marco, marcoContent)}</div>${createCard('template-print-card', 'Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}<div class="mt-2">${createCard('template-print-card','Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('template-print-card','Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('template-print-card','Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
             window.print();
         }
     };
@@ -908,12 +835,9 @@
             document.getElementById('form-step-4').classList.add('hidden');
             document.getElementById('form-step-5').classList.add('hidden');
 
-            ui.ensureEditorsInitialized(config.allEditorIds);
             state.currentSessionId = sessionId;
 
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = DOMPurify.sanitize(sessionData.situacionAprendizaje || '');
-            const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
+            const title = (sessionData.situacionAprendizaje || '').split('\n')[0] || 'Sin título';
             document.getElementById('form-title').textContent = 'Paso 3: Actividades';
             document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id === state.currentSessionId); div.classList.toggle('border-blue-500', div.dataset.id === state.currentSessionId); });
 
@@ -944,10 +868,13 @@
             document.getElementById('form-step-5').classList.add('hidden');
             state.currentSessionId = null;
 
-            ui.ensureEditorsInitialized(['situacionAprendizaje']);
             document.getElementById('form-title').textContent = 'Paso 1: Información General';
             document.querySelectorAll('#session-list > div').forEach(div => div.classList.remove('bg-blue-100', 'border-blue-500'));
-            const summary = document.getElementById('info-summary'); if (summary) { summary.classList.add('hidden'); summary.innerHTML = ''; }
+            const summary = document.getElementById('info-summary'); 
+            if (summary) { 
+                summary.classList.add('hidden'); 
+                summary.innerHTML = '';
+            }
 
             const autoSavedDataRaw = localStorage.getItem('autosave_new');
             if (autoSavedDataRaw) {
@@ -967,32 +894,27 @@
             const form = document.getElementById('session-form');
             const data = { id: state.currentSessionId };
             
-            const formFields = ['fecha', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave'];
-            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'unidadDidactica'];
-            const editorFields = config.allEditorIds;
+            const allFormFields = [
+                'fecha', 'competenciaEspecifica', 'descriptoresOperativos', 'competenciasClave',
+                'situacionAprendizaje', 'contextoReto', 'contenidos', 'metodologias', 
+                'resultadosEsperados', 'preparacionPrevia', 'actividad1', 'actividad2', 
+                'actividad3', 'actividad4', 'instrumentosEvaluacion', 'recursos', 
+                'observaciones', 'adaptacion', 'criteriosCalificacion'
+            ];
+            const multiSelectFields = ['materia', 'curso', 'sesionNum', 'tiposEvaluacion', 'contenidosTransversales', 'unidadDidactica'];
 
-            // Get values from simple form fields
-            formFields.forEach(id => {
+            allFormFields.forEach(id => {
                 if (form.elements[id]) {
                     data[id] = form.elements[id].value;
                 }
             });
 
-            // Get values from multi-select hidden inputs
             multiSelectFields.forEach(id => { 
                 if (form.elements[id]) {
                     data[id] = JSON.parse(form.elements[id].value || '[]');
                 }
             });
 
-            // Get values from SunEditor instances
-            editorFields.forEach(id => {
-                if (state.editors[id] && state.editors[id].core) {
-                    data[id] = state.editors[id].getContents(true);
-                }
-            });
-
-            // Get values from checkbox groups
             data.criteriosEvaluacion = Array.from(document.querySelectorAll('input[name="criteriosEvaluacion"]:checked')).map(cb => cb.value);
             data.dua = Array.from(document.querySelectorAll('input[name="dua"]:checked')).map(cb => cb.value);
             data.duaGuidelines = JSON.parse(document.getElementById('selectedDuaGuidelines').value || '[]');
@@ -1020,9 +942,7 @@
                 const sessionData = state.allSessions.find(s => s.id === savedId);
                 if (sessionData) {
                     document.querySelectorAll('#session-list > div').forEach(div => { div.classList.toggle('bg-blue-100', div.dataset.id === savedId); div.classList.toggle('border-blue-500', div.dataset.id === savedId); });
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = DOMPurify.sanitize(sessionData.situacionAprendizaje || '');
-                    const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
+                    const title = (sessionData.situacionAprendizaje || '').split('\n')[0] || 'Sin título';
                     document.getElementById('form-title').textContent = `Editando: ${title}`;
                 }
             } catch (error) {
@@ -1063,16 +983,13 @@
             const s = state.allSessions.find(x => x.id === state.currentSessionId);
             if (!s) return;
 
-            ui.ensureEditorsInitialized(config.allEditorIds);
             ui.populateForm(s);
             state.currentSessionId = null;
 
-            const titleContent = state.editors['situacionAprendizaje'].getContents(true);
-            state.editors['situacionAprendizaje'].setContents(`[COPIA] ${titleContent}`);
+            const situacionField = document.getElementById('situacionAprendizaje');
+            situacionField.value = `[COPIA] ${situacionField.value}`;
             
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = DOMPurify.sanitize(s.situacionAprendizaje || '');
-            const title = tempDiv.textContent.split('\n')[0] || 'Sin título';
+            const title = (s.situacionAprendizaje || '').split('\n')[0] || 'Sin título';
             document.getElementById('form-title').textContent = `Duplicando: ${title}`;
 
             document.getElementById('form-step-1').classList.add('hidden');
@@ -1173,7 +1090,6 @@
             document.getElementById('duplicate-btn').addEventListener('click', app.duplicateSession);
             
             document.getElementById('continue-btn-1').addEventListener('click', () => {
-                ui.ensureEditorsInitialized(config.allEditorIds);
                 ui.renderInfoSummary();
                 document.getElementById('form-step-1').classList.add('hidden');
                 document.getElementById('form-step-2').classList.remove('hidden');
@@ -1181,7 +1097,6 @@
             });
             
             document.getElementById('continue-btn-2').addEventListener('click', () => {
-                ui.ensureEditorsInitialized(config.allEditorIds);
                 ui.renderInfoSummary();
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.remove('hidden');
@@ -1189,7 +1104,6 @@
             });
             
             document.getElementById('continue-btn-3').addEventListener('click', () => {
-                ui.ensureEditorsInitialized(config.allEditorIds);
                 ui.renderInfoSummary();
                 document.getElementById('form-step-3').classList.add('hidden');
                 document.getElementById('form-step-4').classList.remove('hidden');
@@ -1197,7 +1111,6 @@
             });
 
             document.getElementById('continue-btn-4').addEventListener('click', () => {
-                ui.ensureEditorsInitialized(config.allEditorIds);
                 ui.renderInfoSummary();
                 document.getElementById('form-step-4').classList.add('hidden');
                 document.getElementById('form-step-5').classList.remove('hidden');
@@ -1206,6 +1119,7 @@
             });
 
             document.getElementById('back-btn-2').addEventListener('click', () => {
+                document.getElementById('info-summary').classList.add('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
@@ -1238,7 +1152,7 @@
             document.getElementById('search-form').addEventListener('submit', app.handleSearch);
             document.getElementById('search-clear-btn').addEventListener('click', app.clearSearch);
             
-            document.getElementById('ud-modal-cancel').addEventListener('click', ui.hideUdModal);
+            document.getElementById('ud-modal-cancel')?.addEventListener('click', ui.hideUdModal);
             document.getElementById('multi-select-modal-cancel').addEventListener('click', ui.hideMultiSelectModal);
             document.getElementById('multi-select-modal-save').addEventListener('click', app.saveMultiSelect);
 
