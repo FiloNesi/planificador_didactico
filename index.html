@@ -78,7 +78,7 @@
           </div>
         </div>
         <div id="form-container" class="overflow-y-auto flex-grow p-4">
-          <form id="session-form" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4"></form>
+          <form id="session-form" class="hidden"></form>
           <div id="welcome-message" class="text-center text-slate-500 p-8">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <p class="mt-4 text-lg">Haz clic en "Nueva" para empezar a planificar tu primera sesión.</p>
@@ -532,7 +532,9 @@
             const fecha = data.fecha;
             const formattedDate = fecha ? new Date(fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : '<span class="text-slate-400">Sin fecha</span>';
 
-            const summary = document.getElementById('info-summary') || (() => { const d = document.createElement('div'); d.id = 'info-summary'; d.className = 'hidden mb-4'; document.getElementById('form-step-2')?.prepend(d); return d; })();
+            const summary = document.getElementById('info-summary');
+            if (!summary) return;
+            
             summary.innerHTML = `
                 <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
                     <div class="flex items-center justify-between mb-2">
@@ -549,13 +551,14 @@
                 </div>`;
             summary.classList.remove('hidden');
             document.getElementById('edit-info-btn')?.addEventListener('click', () => {
+                summary.classList.add('hidden');
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-3').classList.add('hidden');
                 document.getElementById('form-step-4').classList.add('hidden');
                 document.getElementById('form-step-5').classList.add('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
-            }, { once: true });
+            });
         },
 
         chipsHtml(arr) {
@@ -566,6 +569,12 @@
         buildForm() {
             const form = document.getElementById('session-form');
             form.innerHTML = '';
+
+            const infoSummary = document.createElement('div');
+            infoSummary.id = 'info-summary';
+            infoSummary.className = 'hidden mb-4';
+            form.appendChild(infoSummary);
+
             const step1 = document.createElement('div'); step1.id = 'form-step-1'; step1.className = 'space-y-6';
             const step2 = document.createElement('div'); step2.id = 'form-step-2'; step2.className = 'hidden space-y-6';
             const step3 = document.createElement('div'); step3.id = 'form-step-3'; step3.className = 'hidden space-y-6';
@@ -662,12 +671,6 @@
             const backBtn5 = document.createElement('button'); backBtn5.type = 'button'; backBtn5.id = 'back-btn-5'; backBtn5.textContent = 'Atrás'; backBtn5.className = 'bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
             navStep5.appendChild(backBtn5);
             step5.appendChild(navStep5);
-
-            const infoSummary = document.createElement('div'); infoSummary.id = 'info-summary'; infoSummary.className = 'hidden mb-4'; 
-            step2.prepend(infoSummary.cloneNode(true));
-            step3.prepend(infoSummary.cloneNode(true));
-            step4.prepend(infoSummary.cloneNode(true));
-            step5.prepend(infoSummary.cloneNode(true));
 
             form.appendChild(step1); 
             form.appendChild(step2);
@@ -867,7 +870,11 @@
 
             document.getElementById('form-title').textContent = 'Paso 1: Información General';
             document.querySelectorAll('#session-list > div').forEach(div => div.classList.remove('bg-blue-100', 'border-blue-500'));
-            const summary = document.getElementById('info-summary'); if (summary) { summary.classList.add('hidden'); summary.innerHTML = ''; }
+            const summary = document.getElementById('info-summary'); 
+            if (summary) { 
+                summary.classList.add('hidden'); 
+                summary.innerHTML = '';
+            }
 
             const autoSavedDataRaw = localStorage.getItem('autosave_new');
             if (autoSavedDataRaw) {
@@ -1112,6 +1119,7 @@
             });
 
             document.getElementById('back-btn-2').addEventListener('click', () => {
+                document.getElementById('info-summary').classList.add('hidden');
                 document.getElementById('form-step-2').classList.add('hidden');
                 document.getElementById('form-step-1').classList.remove('hidden');
                 document.getElementById('form-title').textContent = 'Paso 1: Información General';
