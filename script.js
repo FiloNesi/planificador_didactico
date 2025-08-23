@@ -1,4 +1,38 @@
 // =============================
+// MODULE: UTILITIES
+// =============================
+/**
+ * Valida si una cadena de texto tiene formato de email.
+ * @param {string} email - El email a validar.
+ * @returns {boolean} - True si el email es válido.
+ */
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+/**
+ * Formatea una fecha a un formato localizado (es-ES).
+ * @param {string | Date} date - La fecha a formatear.
+ * @returns {string} - La fecha formateada.
+ */
+const formatDate = (date) => {
+    if (!date) return 'No especificada';
+    // Asegura que la fecha se interpreta correctamente como UTC para evitar problemas de zona horaria.
+    const dateObj = new Date(date);
+    const utcDate = new Date(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate());
+    return new Intl.DateTimeFormat('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }).format(utcDate);
+};
+
+/**
+ * Maneja los errores de forma centralizada, mostrando un mensaje en consola y en la UI.
+ * @param {Error} error - El objeto de error.
+ * @param {string} context - El contexto donde ocurrió el error (ej. "cargando sesiones").
+ */
+const handleError = (error, context) => {
+  console.error(`Error en ${context}:`, error);
+  ui.showModal('Error', `Ocurrió un problema ${context}. Detalles: ${error.message}`);
+};
+
+
+// =============================
 // MODULE: CONFIG
 // =============================
 const config = {
@@ -81,21 +115,26 @@ const state = {
 // =============================
 const api = {
     async call(action, data = {}) {
-        const res = await fetch(config.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-            body: JSON.stringify({ action, ...data })
-        });
-        if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
-        const text = await res.text();
-        let result;
         try {
-            result = JSON.parse(text);
-        } catch {
-            throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
+            const res = await fetch(config.SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: JSON.stringify({ action, ...data })
+            });
+            if (!res.ok) throw new Error(`Error de red: ${res.status} ${res.statusText}`);
+            const text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch {
+                throw new Error(`Respuesta no JSON del servidor: ${text.slice(0, 200)}`);
+            }
+            if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
+            return result.data;
+        } catch (error) {
+            handleError(error, `realizando la acción '${action}'`);
+            throw error; // Re-lanza el error para que la función que llama sepa que falló
         }
-        if (!result.success) throw new Error(result.message || 'Error desconocido en el servidor');
-        return result.data;
     }
 };
 
@@ -592,7 +631,7 @@ const ui = {
         const duaGuidelines = data.duaGuidelines && data.duaGuidelines.length ? `<div><strong class="font-semibold text-slate-700 mt-4 block">Pautas Específicas:</strong>${createList(data.duaGuidelines)}</div>` : '';
         const diversidadContent = `<strong class="font-semibold text-slate-700">Principios DUA:</strong>${createList(data.dua)}${duaGuidelines}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Adaptaciones:</strong>${createText(data.adaptacion)}`;
         const observacionesContent = data.observaciones && data.observaciones.trim() !== '' ? createText(data.observaciones) : `<div class="h-48"></div>`;
-        const fecha = data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : 'No especificada';
+        const fecha = formatDate(data.fecha);
         const infoGeneralContent = `<strong class="font-semibold text-slate-700">Fecha:</strong><p class="mt-1 mb-3 pl-2">${fecha}</p><strong class="font-semibold text-slate-700">Materia(s):</strong>${createList(data.materia)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Curso(s):</strong>${createList(data.curso)}<hr class="my-3 border-slate-200"><strong class="font-semibold text-slate-700">Sesión(es):</strong>${createList(data.sesionNum)}`;
         
         printArea.innerHTML = `<div class="p-8 bg-slate-50 font-sans"><header class="text-center mb-10"><h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">Programación de Sesión</h1><p class="mt-2 text-lg text-slate-500">Informe Detallado</p></header>${createCard('template-print-card', 'Sesión de Aprendizaje', icons.situacion, `<h2 class="text-2xl font-bold text-indigo-700">${situacionTitle}</h2><div class="prose prose-slate max-w-none mt-4">${situacionBody}</div>`)}<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">${createCard('template-print-sidebar-card','Información General', icons.info, infoGeneralContent)}${createCard('template-print-sidebar-card','Marco Pedagógico', icons.marco, marcoContent)}</div>${createCard('template-print-card', 'Secuencia de Actividades', icons.actividades, actividadesContent || createText(null))}<div class="mt-2">${createCard('template-print-card','Estrategia de Evaluación', icons.evaluacion, evaluacionContent)}${createCard('template-print-card','Atención a la Diversidad', icons.diversidad, diversidadContent)}${createCard('template-print-card','Observaciones', icons.observaciones, observacionesContent)}</div><footer class="text-center mt-10 pt-6 border-t border-slate-200"><p class="text-sm text-slate-500">Informe generado con el Planificador Didáctico - ${new Date().toLocaleDateString('es-ES')}</p></footer></div>`;
@@ -611,12 +650,7 @@ const app = {
             state.allSessions = await api.call('getSessions');
             ui.renderSessionList();
         } catch (error) {
-            console.error('Error detallado al cargar sesiones:', error);
-            const loadingEl = document.getElementById('loading-sessions');
-            if (loadingEl) {
-                loadingEl.textContent = 'Error al cargar sesiones.';
-            }
-            ui.showModal('Error de Conexión', `No se pudieron cargar las sesiones. Detalles: ${error.message}. Comprueba que el despliegue del script es "Anyone" y vuelve a desplegar tras cambios.`);
+            handleError(error, 'al cargar las sesiones');
         }
     },
 
@@ -744,8 +778,7 @@ const app = {
                 document.getElementById('form-title').textContent = `Editando: ${title}`;
             }
         } catch (error) {
-            console.error('Error al guardar', error);
-            ui.showModal('Error', `Hubo un problema al guardar la sesión: ${error.message}`);
+            handleError(error, 'al guardar la sesión');
         }
     },
 
@@ -765,8 +798,7 @@ const app = {
                         ui.showModal('Éxito', 'Sesión eliminada.');
                         app.loadSessions();
                     } catch (error) {
-                        console.error('Error al eliminar', error);
-                        ui.showModal('Error', `No se pudo eliminar la sesión: ${error.message}`);
+                        handleError(error, 'al eliminar la sesión');
                     }
                 }}
             ]
