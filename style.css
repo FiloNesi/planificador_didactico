@@ -1,0 +1,103 @@
+body { 
+  font-family: 'Inter', sans-serif; 
+}
+
+::-webkit-scrollbar { 
+  width: 8px; 
+}
+
+::-webkit-scrollbar-track { 
+  background: #f1f5f9; 
+}
+
+::-webkit-scrollbar-thumb { 
+  background: #94a3b8; 
+  border-radius: 10px; 
+}
+
+::-webkit-scrollbar-thumb:hover { 
+  background: #64748b; 
+}
+
+select[multiple] { 
+  padding: 0.5rem; 
+}
+
+.checkbox-group { 
+  max-height: 20rem; 
+}
+
+.spinner { 
+  border: 4px solid rgba(0, 0, 0, 0.1); 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 50%; 
+  border-left-color: #09f; 
+  animation: spin 1s ease infinite; 
+}
+
+@keyframes spin { 
+  0% { transform: rotate(0deg); } 
+  100% { transform: rotate(360deg); } 
+}
+
+/* Estilos para la impresión */
+@media print {
+  body * { 
+    visibility: hidden; 
+  }
+  
+  #print-area, #print-area * { 
+    visibility: visible; 
+  }
+  
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  .no-print { 
+    display: none; 
+  }
+}
+
+/* Clases de Prosa para Tailwind, para el contenido del informe */
+.prose { 
+  color: #334155; 
+  max-width: 65ch; 
+}
+
+.prose a { 
+  color: #4f46e5; 
+  text-decoration: underline; 
+}
+
+.prose strong { 
+  color: #1e293b; 
+  font-weight: 600; 
+}
+
+.prose blockquote { 
+  border-left-color: #e2e8f0; 
+}
+
+.prose thead { 
+  border-bottom-color: #e2e8f0; 
+}
+
+.prose-sm { 
+  font-size: 0.875rem; 
+  line-height: 1.5; 
+}
+
+.prose ul { 
+  list-style-type: disc; 
+}
+
+.prose ol { 
+  list-style-type: decimal; 
+}
